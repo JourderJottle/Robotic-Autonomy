@@ -14,7 +14,7 @@ class BallTracker:
         self.bridge = CvBridge()
         
         # Subscribe to the camera feed
-        rospy.Subscriber("video topic", Image, self.image_callback)
+        rospy.Subscriber("video_topic", Image, self.image_callback)
         
         rospy.loginfo("Ball Tracker Node Initialized")
         

@@ -7,7 +7,7 @@ import imutils
 
 rospy.init_node("camera_publisher", anonymous=True)
 
-publisher = rospy.Publisher("video topic", Image, queue_size=60)
+publisher = rospy.Publisher("video_topic", Image, queue_size=60)
 
 rate = rospy.Rate(30)
 
@@ -19,6 +19,6 @@ while not rospy.is_shutdown() :
     returnValue, capturedFrame = videoCaptureObject.read()
     if returnValue == True :
         rospy.loginfo("Video frame captured and published")
-        imageToTransmit = bridgeObject.cv2_to_imgmsg(capturedFrame)
+        imageToTransmit = bridgeObject.cv2_to_imgmsg(capturedFrame, encoding="bgr8")
         publisher.publish(imageToTransmit)
     rate.sleep()
