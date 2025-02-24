@@ -8,16 +8,17 @@ while True:
 
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
 
-    lower_yellow = np.array([100,70,0])
+    lower_yellow = np.array([100,30,30])
     upper_yellow = np.array([140,255,255])
  
     mask = cv.inRange(hsv, lower_yellow, upper_yellow)
 
     contours = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     contours = imutils.grab_contours(contours)
-    largest_contour = max(contours, key = cv.contourArea)
+    if len(contours) != 0 :
 
-    if len(largest_contour) != 0 :
+        largest_contour = max(contours, key = cv.contourArea)
+
         M = cv.moments(largest_contour)
         if M["m00"] != 0 :
             cx = int(M["m10"] / M["m00"])
