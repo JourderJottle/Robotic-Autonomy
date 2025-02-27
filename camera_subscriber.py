@@ -49,12 +49,9 @@ class BallTracker:
             r = int(r)
             
             if r > 0:
-            
-            	cv.circle(frame, center, r, (0, 255, 0), 2)
-            	
-            	cv.circle(frame, center, 5, (0,0,255), -1)
-            	
-            	cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
+                cv.circle(frame, center, r, (0, 255, 0), 2)
+                cv.circle(frame, center, 5, (0,0,255), -1)
+                cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
             	
             
             
