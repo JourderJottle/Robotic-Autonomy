@@ -2,6 +2,7 @@
 
 import rospy
 from sensor_msgs.msg import Image
+from std_msgs.msg import Int64MultiArray
 from cv_bridge import CvBridge, CvBridgeError
 import cv2 as cv
 import numpy as np
@@ -12,6 +13,8 @@ class BallTracker:
     def __init__(self):
         rospy.init_node('ball_tracker', anonymous=True)
         self.bridge = CvBridge()
+
+        self.publisher = rospy.Publisher("ball_coordinates", Int64MultiArray, queue_size=60)
         
         # Subscribe to the camera feed
         rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
@@ -29,6 +32,9 @@ class BallTracker:
             rospy.logerr(f"CvBridge Error: {e}")
             return
         
+        frame_with_contours = frame.copy()
+        frame_with_largest_circle = frame.copy()
+        
         # Process frame
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
         
@@ -39,6 +45,13 @@ class BallTracker:
         mask = cv.inRange(hsv, lower_color, upper_color)
         contours = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         contours = imutils.grab_contours(contours)
+        cv.drawContours(frame_with_contours, contours, -1, (0, 0, 255), 2)
+
+        circles = None
+        cv.HoughCircles(mask, circles, cv.CV_HOUGH_GRADIENT, 1, 50, 50, 0.9, 10, -1)
+        if len(circles) > 0 and len(circles[0]) == 3 :
+            largest_circle = circles[0][0]
+            cv.circle(frame_with_largest_circle, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 2)
         
         if len(contours) != 0:
             # Find largest because that's probably the ball
@@ -49,54 +62,16 @@ class BallTracker:
             r = int(r)
             
             if r > 0:
-            
-            	cv.circle(frame, center, r, (0, 255, 0), 2)
-            	
-            	cv.circle(frame, center, 5, (0,0,255), -1)
-            	
-            	cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
+                cv.circle(frame, center, r, (0, 255, 0), 2)
+                cv.circle(frame, center, 5, (0,0,255), -1)
+                cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
+                self.publisher.publish([int(x), int(y)])
             	
             
             
         # Display the resulting frame
-        cv.imshow('Video', frame)
-        cv.imshow('Mask', mask)
-        if cv.waitKey(10) & 0xFF == ord('b'):
-            rospy.signal_shutdown("Shutting down")
-        
-    def image_callback_old(self, data):
-        try:
-            # Convert the ROS Image message to OpenCV format
-            frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        except CvBridgeError as e:
-            rospy.logerr(f"CvBridge Error: {e}")
-            return
-        
-        # Process frame
-        hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-        
-        # Define the color range for the ball (blue in this case)
-        lower_color = np.array([70, 100, 100])
-        upper_color = np.array([140, 255, 255])
-        
-        mask = cv.inRange(hsv, lower_color, upper_color)
-        contours = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        contours = imutils.grab_contours(contours)
-        
-        if len(contours) != 0:
-            # Find largest because that's probably the ball
-            largest_contour = max(contours, key=cv.contourArea)
-            M = cv.moments(largest_contour)
-            if M["m00"] != 0:
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
-                
-                # Draw the circle
-                cv.circle(frame, (cx, cy), 7, (255, 255, 255), -1)
-                cv.drawContours(frame, contours, -1, 255, 3)
-            
-            
-        # Display the resulting frame
+        cv.imshow('Contours', frame_with_contours)
+        cv.imshow('Largest Circle', frame_with_largest_circle)
         cv.imshow('Video', frame)
         cv.imshow('Mask', mask)
         if cv.waitKey(10) & 0xFF == ord('b'):
