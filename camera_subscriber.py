@@ -16,7 +16,7 @@ class BallTracker:
         self.bridge = CvBridge()
         
         # Publish center of ball eventually
-        self.ball_center_pub - rospy.Publisher("\ball_center", Int32MultiArray, queue_size=10)
+        self.ball_center_pub = rospy.Publisher("\ball_center", Int32MultiArray, queue_size=10)
         
         # Subscribe to the camera feed
         rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
