@@ -15,10 +15,22 @@ class BallLocalizer :
         rospy.spin()
 
     def variance_from_distance(self, distance) :
-        return np.matrix([[0, 0,], [0, 0]])
+        # Scale with distance example?
+        sigma_d = 0.01 * distance
+        sigma_theta = 0.001
+        return np.matrix([[sigma_d**2, 0], [0, sigma_theta**2]])
+        
+        # or...
+        # return np.matrix([[1, 0,], [0, 1]])
         
     def callback(self, data) :
-        dist = gauss2D_from_polar(data[0], data[1], self.variance_from_distance(data[0]))
+        """Data 0 is distance, Data 1 is theta"""
+        
+        distance = data.data[0]
+        theta = data.data[1]
+        
+        
+        dist = gauss2D_from_polar(distance, theta, self.variance_from_distance(distance))
 
         x = np.linspace(-500, 500)
         y = np.linspace(0, 1000)
