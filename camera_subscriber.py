@@ -2,7 +2,7 @@
 
 import rospy
 from sensor_msgs.msg import Image, CameraInfo
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Float32MultiArray
 from cv_bridge import CvBridge, CvBridgeError
 import cv2 as cv
 import numpy as np
@@ -15,11 +15,15 @@ class BallTracker:
         rospy.init_node('ball_tracker', anonymous=True)
         self.bridge = CvBridge()
         
-        # Publish center of ball eventually
-        self.ball_center_pub = rospy.Publisher("/ball_2d_data", Int32MultiArray, queue_size=10)
+        # Publish ball data
+        self.ball_2d_data = None
+        self.ball_data_pub = rospy.Publisher("/ball_data", Float32MultiArray, queue_size=10)
+
+        # Subscribe to the depth camera feed
+        rospy.Subcriber("/camera/depth/image_raw", Image, self.callback)
         
-        # Subscribe to the camera feed
-        rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
+        # Subscribe to the color camera feed
+        rospy.Subscriber("/camera/color/image_raw", Image, self.color_callback)
         
         # Subscribe to depth camera info for focal length
         self.focal_length = None
@@ -31,13 +35,25 @@ class BallTracker:
         
         # spin instead of while true
         rospy.spin()
-    
+
+    def callback(self, data) :
+        try :
+            cv_img = self.bridge.imgmsg_to_cv2(data, "32FC1")
+        except CvBridgeError as e:
+            rospy.logerr(f"CvBridge Error: {e}")
+            return
+        
+        depth_at_center = cv_img.at(self.ball_2d_data[0], self.ball_2d_data[1])
+
+        self.ball_data_pub.publish([depth_at_center, self.ball_2d_data[2]])
+        rospy.loginfo("Published d and theta")
+
     def camera_info_callback(self, data):
         self.focal_length = data.K[0]
         self.image_width = data.K[2]
-        rospy.loginfo(f"Got focal length: {self.focal_length}")
-        
-    def image_callback(self, data):
+        #rospy.loginfo(f"Got focal length: {self.focal_length}")
+
+    def color_callback(self, data) :
         try:
             # Convert the ROS Image message to OpenCV format
             frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -60,11 +76,11 @@ class BallTracker:
         contours = imutils.grab_contours(contours)
         cv.drawContours(frame_with_contours, contours, -1, (0, 0, 255), 2)
 
-        circles = None
-        cv.HoughCircles(mask, circles, cv.CV_HOUGH_GRADIENT, 1, 50, 50, 0.9, 10, -1)
-        if len(circles) > 0 and len(circles[0]) == 3 :
-            largest_circle = circles[0][0]
-            cv.circle(frame_with_largest_circle, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 2)
+        # circles = None
+        # cv.HoughCircles(mask, circles, cv.CV_HOUGH_GRADIENT, 1, 50, 50, 0.9, 10, -1)
+        # if len(circles) > 0 and len(circles[0]) == 3 :
+        #     largest_circle = circles[0][0]
+        #     cv.circle(frame_with_largest_circle, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 2)
         
         if len(contours) != 0:
             # Find largest because that's probably the ball
@@ -81,11 +97,7 @@ class BallTracker:
 
                 theta = math.atan((center[0] - self.image_width) / self.focal_length)
                 
-                # Publish 2D data
-                ball_2d_data_msg = Int32MultiArray()
-                ball_2d_data_msg.data = [center[0], center[1], theta]
-                self.ball_center_pub.publish(ball_2d_data_msg)
-                rospy.loginfo(f"Published ball 2D data at: {ball_2d_data_msg.data}")
+                self.ball_2d_data = [center[0], center[1], theta]
             
             
         # Display the resulting frame
