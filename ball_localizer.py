@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib as plt
 import math
 import imutils
-import robot_math
+from robot_math import gauss2D_from_polar, Gauss2D
 
 class BallLocalizer :
     def __init__(self) :
@@ -17,7 +17,7 @@ class BallLocalizer :
         return np.matrix([[0, 0,], [0, 0]])
         
     def callback(self, data) :
-        dist = robot_math.gauss2D_from_polar(data[0], data[1], self.variance_from_distance(data[0]))
+        dist = gauss2D_from_polar(data[0], data[1], self.variance_from_distance(data[0]))
 
         sigma_1, sigma_2 = dist.S[0,0], dist.S[1,1]
 
@@ -39,3 +39,9 @@ class BallLocalizer :
         plt.ylabel("x2")
         plt.title(f'Distribution')
         ax.axes.zaxis.set_ticks([])
+
+if __name__ == '__main__':
+    try:
+        BallLocalizer()
+    except rospy.ROSInterruptException:
+        rospy.loginfo("Ball Tracker Node terminated.")
