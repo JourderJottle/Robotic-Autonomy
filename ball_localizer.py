@@ -1,9 +1,7 @@
 import rospy
 from std_msgs.msg import Float32MultiArray
 import numpy as np
-import matplotlib as plt
-import math
-import imutils
+import matplotlib.pyplot as plt
 from robot_math import gauss2D_from_polar, Gauss2D
 
 class BallLocalizer :
@@ -39,6 +37,7 @@ class BallLocalizer :
         plt.ylabel("x2")
         plt.title(f'Distribution')
         ax.axes.zaxis.set_ticks([])
+        plt.show()
 
 if __name__ == '__main__':
     try:
