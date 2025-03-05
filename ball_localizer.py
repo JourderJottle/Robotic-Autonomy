@@ -2,7 +2,7 @@ import rospy
 from std_msgs.msg import Float32MultiArray
 import numpy as np
 import matplotlib.pyplot as plt
-from robot_math import gauss2D_from_polar, Gauss2D
+from robot_math import *
 
 class BallLocalizer :
     def __init__(self) :
