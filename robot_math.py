@@ -22,6 +22,6 @@ def gauss2D_from_polar(u_d: float, u_theta: float, S: np.matrix) -> Gauss2D :
     return Gauss2D(np.matrix([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]]), S_v)
 
 def local_target_pose_to_global(target_pose: np.matrix, robot_pose: np.matrix, robot_theta: float) -> np.matrix :
-    global_target_pose = target_pose - robot_pose
-    R = rotational_matrix(-robot_theta)
+    global_target_pose = target_pose + robot_pose
+    R = rotational_matrix(robot_theta)
     return R * global_target_pose
