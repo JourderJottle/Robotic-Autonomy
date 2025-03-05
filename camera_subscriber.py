@@ -105,7 +105,7 @@ class BallTracker:
             
         # Display the resulting frame
         cv.imshow('Video', frame)
-        cv.imshow('Mask', mask)
+        #cv.imshow('Mask', mask)
         if cv.waitKey(10) & 0xFF == ord('b'):
             rospy.signal_shutdown("Shutting down")
         
