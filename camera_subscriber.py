@@ -20,7 +20,7 @@ class BallTracker:
         self.ball_data_pub = rospy.Publisher("/ball_data", Float32MultiArray, queue_size=10)
 
         # Subscribe to the depth camera feed
-        rospy.Subcriber("/camera/depth/image_raw", Image, self.callback)
+        rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.callback)
         
         # Subscribe to the color camera feed
         rospy.Subscriber("/camera/color/image_raw", Image, self.color_callback)
@@ -43,7 +43,7 @@ class BallTracker:
             rospy.logerr(f"CvBridge Error: {e}")
             return
         
-        depth_at_center = cv_img.at(self.ball_2d_data[0], self.ball_2d_data[1])
+        depth_at_center = cv_img[self.ball_2d_data[0]][self.ball_2d_data[1]]
 
         self.ball_data_pub.publish([depth_at_center, self.ball_2d_data[2]])
         rospy.loginfo("Published d and theta")
