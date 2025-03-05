@@ -20,7 +20,7 @@ class BallTracker:
 
         # Subscribe to the depth camera feed
         
-        rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.callback)
+        rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.d_and_theta_callback)
         
         # Subscribe to the color camera feed
         self.ball_2d_data = None
@@ -37,7 +37,7 @@ class BallTracker:
         # spin instead of while true
         rospy.spin()
 
-    def callback(self, data) :
+    def d_and_theta_callback(self, data) :
         if self.ball_2d_data != None :
             try :
                 cv_img = self.bridge.imgmsg_to_cv2(data, "32FC1")
