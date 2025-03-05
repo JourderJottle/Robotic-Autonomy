@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from sensor_msgs.msg import Image
-from std_msgs.msg import Int64MultiArray
+from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import Int32MultiArray
 from cv_bridge import CvBridge, CvBridgeError
 import cv2 as cv
@@ -21,10 +20,19 @@ class BallTracker:
         # Subscribe to the camera feed
         rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
         
+        # Subscribe to depth camera info for focal length
+        self.focal_length = None
+        rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.camera_info_callback)
+        
+        
         rospy.loginfo("Ball Tracker Node Initialized")
         
         # spin instead of while true
         rospy.spin()
+    
+    def camera_info_callback(self, data):
+        self.focal_length = data.K[0]
+        rospy.loginfo(f"Got focal length: {self.focal_length}")
         
     def image_callback(self, data):
         try:
