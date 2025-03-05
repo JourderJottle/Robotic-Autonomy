@@ -6,6 +6,7 @@ from std_msgs.msg import Int32MultiArray
 from cv_bridge import CvBridge, CvBridgeError
 import cv2 as cv
 import numpy as np
+import math
 import imutils
 
 class BallTracker:
@@ -15,13 +16,14 @@ class BallTracker:
         self.bridge = CvBridge()
         
         # Publish center of ball eventually
-        self.ball_center_pub = rospy.Publisher("\ball_center", Int32MultiArray, queue_size=10)
+        self.ball_center_pub = rospy.Publisher("/ball_2d_data", Int32MultiArray, queue_size=10)
         
         # Subscribe to the camera feed
         rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
         
         # Subscribe to depth camera info for focal length
         self.focal_length = None
+        self.image_width = None
         rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.camera_info_callback)
         
         
@@ -32,6 +34,7 @@ class BallTracker:
     
     def camera_info_callback(self, data):
         self.focal_length = data.K[0]
+        self.image_width = data.K[2]
         rospy.loginfo(f"Got focal length: {self.focal_length}")
         
     def image_callback(self, data):
@@ -75,12 +78,14 @@ class BallTracker:
                 cv.circle(frame, center, r, (0, 255, 0), 2)
                 cv.circle(frame, center, 5, (0,0,255), -1)
                 cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
+
+                theta = math.atan((center[0] - self.image_width) / self.focal_length)
                 
-                # Publish center data
-                ball_center_msg = Int32MultiArray()
-                ball_center_msg.data = [center[0], center[1]]
-                self.ball_center_pub.publish(ball_center_msg)
-                rospy.loginfo(f"Published ball center at: {center}")
+                # Publish 2D data
+                ball_2d_data_msg = Int32MultiArray()
+                ball_2d_data_msg.data = [center[0], center[1], theta]
+                self.ball_center_pub.publish(ball_2d_data_msg)
+                rospy.loginfo(f"Published ball 2D data at: {ball_2d_data_msg.data}")
             
             
         # Display the resulting frame
