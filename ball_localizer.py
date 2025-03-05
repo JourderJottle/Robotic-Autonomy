@@ -17,10 +17,8 @@ class BallLocalizer :
     def callback(self, data) :
         dist = gauss2D_from_polar(data[0], data[1], self.variance_from_distance(data[0]))
 
-        sigma_1, sigma_2 = dist.S[0,0], dist.S[1,1]
-
-        x = np.linspace(-3*sigma_1, 3*sigma_1, num=100)
-        y = np.linspace(-3*sigma_2, 3*sigma_2, num=100)
+        x = np.linspace(-500, 500)
+        y = np.linspace(0, 1000)
         X, Y = np.meshgrid(x,y)
         
         # Generating the density function
@@ -28,10 +26,10 @@ class BallLocalizer :
         pdf = np.zeros(X.shape)
         for i in range(X.shape[0]):
             for j in range(X.shape[1]):
-                pdf[i,j] = dist.probability([X[i,j], Y[i,j]])
+                pdf[i,j] = dist.probability(np.matrix([[X[i,j]], [Y[i,j]]]))
         
         # Plotting the density function values
-        ax = self.fig.add_subplot(0, projection = '3d')
+        ax = self.fig.add_subplot(131, projection = '3d')
         ax.plot_surface(X, Y, pdf, cmap = 'viridis')
         plt.xlabel("x1")
         plt.ylabel("x2")
