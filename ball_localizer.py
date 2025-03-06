@@ -32,13 +32,13 @@ class Gauss2D:
     def probability(self, x: np.matrix) -> float :
         ud = x - self.u
         
-        exponent = -0.5 * (ud.T @ self.invS @ ud).item()
+        #exponent = -0.5 * (ud.T @ self.invS @ ud).item()
         
-        exponent = np.clip(exponent, -700, 700)
+        #exponent = np.clip(exponent, -700, 700)
         
-        return math.exp(exponent) / math.sqrt( (2*math.pi)**2 * self.detS)
+        #return math.exp(exponent) / math.sqrt( (2*math.pi)**2 * self.detS)
         
-        # return math.exp(-ud.T * self.invS * ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
+        return math.exp(-ud.T * self.invS * ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
 
 def rotational_matrix(theta: float) -> np.matrix :
     return np.array([[math.cos(theta), -math.sin(theta)],[math.sin(theta), math.cos(theta)]], dtype=np.float64)
@@ -80,12 +80,12 @@ class BallLocalizer :
 
     def variance_from_distance(self, distance) :
         # Scale with distance example?
-        sigma_d = 0.01 * distance
-        sigma_theta = 0.001
-        return np.matrix([[sigma_d**2, 0], [0, sigma_theta**2]])
+        #sigma_d = 0.01 * distance
+        #sigma_theta = 0.001
+        #return np.matrix([[sigma_d**2, 0], [0, sigma_theta**2]])
         
         # or...
-        # return np.matrix([[1, 0,], [0, 1]])
+         return np.matrix([[1, 0,], [0, 1]])
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
@@ -93,11 +93,14 @@ class BallLocalizer :
         distance = data.data[0]
         theta = data.data[1]
         
+        #rospy.loginfo(f'd = {distance}, theta = {theta}')
+        
         
         dist = gauss2D_from_polar(distance, theta, self.variance_from_distance(distance))
 
-        x = np.linspace(-500, 500)
-        y = np.linspace(0, 1000)
+
+        x = np.linspace(-500, 500, 100)
+        y = np.linspace(-500, 500, 100)
         X, Y = np.meshgrid(x,y)
         
         # Generating the density function
@@ -106,15 +109,18 @@ class BallLocalizer :
         points = []
         pdf = np.zeros(X.shape)
         
+
         for i in range(X.shape[0]):
         	for j in range(X.shape[1]):
         		prob = dist.probability(np.array([[X[i, j]], [Y[i, j]]], dtype=np.float64))
-        		p = [ X[i, j], Y[i, j], prob ]
+        		rospy.loginfo(f'prob is {prob}')
+        		p = [ X[i, j], Y[i, j], prob+10 ]
         		points.append(p)
         
-       	header = rospy.Header()
-       	header.stamp = rospy.Time.now()
-       	header.frame_id = "map"
+        
+        header = rospy.Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = "map"
        	
         fields = [
             PointField('x', 0, PointField.FLOAT32, 1),
