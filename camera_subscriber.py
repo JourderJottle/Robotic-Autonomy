@@ -48,7 +48,7 @@ class BallTracker:
             depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
 
             self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
-            rospy.loginfo("Published d and theta")
+            rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
 
     def camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :

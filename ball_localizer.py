@@ -5,16 +5,8 @@ import rospy
 from std_msgs.msg import Float32MultiArray
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import math
 import cv2 as cv
-
-from sensor_msgs.msg import PointCloud2, PointField
-import sensor_msgs.point_cloud2 as pc2
-
-import open3d as o3d
-
-
 
 class Gauss2D:
 
@@ -32,13 +24,7 @@ class Gauss2D:
     def probability(self, x: np.matrix) -> float :
         ud = x - self.u
         
-        #exponent = -0.5 * (ud.T @ self.invS @ ud).item()
-        
-        #exponent = np.clip(exponent, -700, 700)
-        
-        #return math.exp(exponent) / math.sqrt( (2*math.pi)**2 * self.detS)
-        
-        return math.exp(-ud.T * self.invS * ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
+        return math.exp(-ud.T @ self.invS @ ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
 
 def rotational_matrix(theta: float) -> np.matrix :
     return np.array([[math.cos(theta), -math.sin(theta)],[math.sin(theta), math.cos(theta)]], dtype=np.float64)
@@ -48,14 +34,11 @@ def gauss2D_from_polar(u_d: float, u_theta: float, S: np.matrix) -> Gauss2D :
     S_v = R @ S @ R.T
     return Gauss2D(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
 
-def local_target_pose_to_global(target_pose: np.ndarray, robot_pose: np.ndarray, robot_theta: float) -> np.ndarray :
-    #global_target_pose = target_pose + robot_pose
-    #R = rotational_matrix(robot_theta)
-    #return R * global_target_pose
-    
-    # Must rotate before adding
-    R = rotational_matrix(robot_theta)
-    return R @ target_pose + robot_pose
+def local_target_pose_to_global(target_pose: np.ndarray, sensor_translation: np.ndarray, sensor_theta: float, robot_pose: np.ndarray, robot_theta: float) -> np.ndarray :
+
+    R_R = rotational_matrix(sensor_theta)
+    R_G = rotational_matrix(robot_theta)
+    return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
     
     
     
@@ -67,14 +50,16 @@ class BallLocalizer :
     def __init__(self) :
         rospy.init_node("ball_localizer", anonymous=True)
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
-        #self.fig, self.ax = plt.subplots(subplot_kw={"projection":"3d"})
         
-      
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        
-        
-        self.cloud_pub = rospy.Publisher('/ball_cloud', PointCloud2, queue_size=10)
+        # checked via tape measurer
+        self.observable_distance = 3048
+        # checked via moving ball towards camera to find minimum computed distance
+        self.minimum_observable_distance = 200
+        # checked via moving ball to edge of camera FOV to check angle
+        self.observable_angle = 0.63
+        self.scale = 1 / 5
+        self.frame_height = int(self.observable_distance * self.scale)
+        self.frame_width = int(self.observable_distance * math.sin(self.observable_angle) * 2 * self.scale)
         
         rospy.spin()
 
@@ -85,66 +70,32 @@ class BallLocalizer :
         #return np.matrix([[sigma_d**2, 0], [0, sigma_theta**2]])
         
         # or...
-         return np.matrix([[1, 0,], [0, 1]])
+        return np.matrix([[50, 0,], [0, 1]])
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
         
         distance = data.data[0]
         theta = data.data[1]
-        
-        #rospy.loginfo(f'd = {distance}, theta = {theta}')
-        
+        rospy.loginfo(f'{distance} {theta}')
         
         dist = gauss2D_from_polar(distance, theta, self.variance_from_distance(distance))
+        
+        u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
+        a = dist.S[0, 0]
+        b = dist.S[0, 1]
+        c = dist.S[1, 1]
+        l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+        l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+        angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
 
-
-        x = np.linspace(-500, 500, 100)
-        y = np.linspace(-500, 500, 100)
-        X, Y = np.meshgrid(x,y)
+        display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
+        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
+        cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
         
-        # Generating the density function
-        # for each point in the meshgrid
-        
-        points = []
-        pdf = np.zeros(X.shape)
-        
-
-        for i in range(X.shape[0]):
-        	for j in range(X.shape[1]):
-        		prob = dist.probability(np.array([[X[i, j]], [Y[i, j]]], dtype=np.float64))
-        		rospy.loginfo(f'prob is {prob}')
-        		p = [ X[i, j], Y[i, j], prob+10 ]
-        		points.append(p)
-        
-        
-        header = rospy.Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = "map"
-       	
-        fields = [
-            PointField('x', 0, PointField.FLOAT32, 1),
-            PointField('y', 4, PointField.FLOAT32, 1),
-            PointField('z', 8, PointField.FLOAT32, 1),
-        ]
-        
-        cloud_msg = pc2.create_cloud(header, fields, points)
-        cloud_msg.width = len(points)
-        cloud_msg.height = 1
-        cloud_msg.is_dense = False
-        self.cloud_pub.publish(cloud_msg)
-        rospy.loginfo("Published ball cloud")
-        
-        
-        # Plotting the density function values
-        #ax = self.fig.add_subplot(111, projection = '3d')
-        #ax.plot_surface(X, Y, pdf, cmap = 'viridis')
-        #plt.xlabel("x1")
-        #plt.ylabel("x2")
-        #plt.title(f'Distribution')
-        #ax.axes.zaxis.set_ticks([])
-        #plt.show()
-
+        cv.imshow('Space', display_frame)
+        if cv.waitKey(10) & 0xFF == ord('b'):
+            rospy.signal_shutdown("Shutting down")
         
 
 
