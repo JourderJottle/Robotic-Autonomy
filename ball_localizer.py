@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import cv2 as cv
+from collections import deque
 
 class Gauss2D:
 
@@ -52,31 +53,60 @@ class BallLocalizer :
         self.scale = 1 / 5
         self.frame_height = int(self.observable_distance * self.scale)
         self.frame_width = int(self.observable_distance * math.sin(self.observable_angle) * 2 * self.scale)
-        
+        self.distance_noise = 0.1
+        self.angle_noise = 0.01
+
+        self.angle_total = 0
+        self.distance_total = 0
+        self.observation_queue = deque()
+        self.queue_size = 10
+
         rospy.spin()
 
-    def variance_of_likelihood(self, observation: np.matrix) :
-        return np.diag(observation)
+    def variance_of_likelihood(self, d: float, theta: float) :
+        u_d = self.distance_total / self.queue_size
+        u_theta = self.angle_total / self.queue_size
+        v_d = 0
+        v_theta = 0
+        for o in self.observation_queue :
+            v_d += (o[0] - u_d)**2
+            v_theta += (o[1] - u_theta)**2
+        S_d = math.sqrt(v_d / self.queue_size)
+        S_theta = math.sqrt(v_theta / self.queue_size)
+        return np.matrix([[S_d, 0], [0, S_theta]])
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
         display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
         cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
+        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
 
-        if data.data[0] > self.minimum_observable_distance and data.data[0] < self.observable_distance and abs(data.data[1]) < self.observable_angle :
-            distance = data.data[0]
-            theta = data.data[1]
-            rospy.loginfo(f'{distance} {theta}')
+        init_distance = data.data[0]
+        init_theta = data.data[1]
+        self.distance_total += init_distance
+        self.angle_total += init_theta
+        self.observation_queue.append((init_distance, init_theta))
+        if len(self.observation_queue) >= self.queue_size :
+            self.distance_total -= self.observation_queue[0][0]
+            self.angle_total -= self.observation_queue[0][1]
+            self.observation_queue.popleft()
+            distance = self.distance_total / self.queue_size
+            theta = self.angle_total / self.queue_size
+        else :
+            distance = init_distance
+            theta = init_theta
+        if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
             
-            dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood(distance))
-            
+            dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood(init_distance, abs(init_theta)))
+
             u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
             a = dist.S[0, 0]
             b = dist.S[0, 1]
             c = dist.S[1, 1]
+            
             l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
             l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+
             angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
 
             cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
