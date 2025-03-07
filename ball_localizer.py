@@ -53,7 +53,7 @@ class BallLocalizer :
         self.scale = 1 / 5
         self.frame_height = int(self.observable_distance * self.scale)
         self.frame_width = int(self.observable_distance * math.sin(self.observable_angle) * 2 * self.scale)
-        self.distance_noise = 0.1
+        self.distance_noise = 0.05
         self.angle_noise = 0.01
 
         self.angle_total = 0
@@ -63,7 +63,7 @@ class BallLocalizer :
 
         rospy.spin()
 
-    def variance_of_likelihood(self, d: float, theta: float) :
+    def variance_of_likelihood(self) :
         u_d = self.distance_total / self.queue_size
         u_theta = self.angle_total / self.queue_size
         v_d = 0
@@ -73,7 +73,7 @@ class BallLocalizer :
             v_theta += (o[1] - u_theta)**2
         S_d = math.sqrt(v_d / self.queue_size)
         S_theta = math.sqrt(v_theta / self.queue_size)
-        return np.matrix([[S_d, 0], [0, S_theta]])
+        return np.matrix([[S_d + u_d * self.distance_noise, 0], [0, S_theta + u_d * self.angle_noise]])
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
@@ -83,6 +83,8 @@ class BallLocalizer :
 
         init_distance = data.data[0]
         init_theta = data.data[1]
+        distance = init_distance
+        theta = init_theta
         self.distance_total += init_distance
         self.angle_total += init_theta
         self.observation_queue.append((init_distance, init_theta))
@@ -92,9 +94,7 @@ class BallLocalizer :
             self.observation_queue.popleft()
             distance = self.distance_total / self.queue_size
             theta = self.angle_total / self.queue_size
-        else :
-            distance = init_distance
-            theta = init_theta
+
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
             
             dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood(init_distance, abs(init_theta)))
