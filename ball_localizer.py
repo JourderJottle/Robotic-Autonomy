@@ -97,7 +97,7 @@ class BallLocalizer :
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
             
-            dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood(init_distance, abs(init_theta)))
+            dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood())
 
             u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
             a = dist.S[0, 0]
