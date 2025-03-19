@@ -65,7 +65,6 @@ class BallTracker:
                 return
             
             frame_with_contours = frame.copy()
-            #frame_with_largest_circle = frame.copy()
             
             # Process frame
             hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
@@ -79,11 +78,14 @@ class BallTracker:
             contours = imutils.grab_contours(contours)
             cv.drawContours(frame_with_contours, contours, -1, (0, 0, 255), 2)
 
-            # circles = None
-            # cv.HoughCircles(mask, circles, cv.CV_HOUGH_GRADIENT, 1, 50, 50, 0.9, 10, -1)
-            # if len(circles) > 0 and len(circles[0]) == 3 :
-            #     largest_circle = circles[0][0]
-            #     cv.circle(frame_with_largest_circle, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 2)
+            """
+            frame_with_largest_circle = frame.copy()
+            circles = None
+            cv.HoughCircles(mask, circles, cv.CV_HOUGH_GRADIENT, 1, 50, 50, 0.9, 10, -1)
+            if len(circles) > 0 and len(circles[0]) == 3 :
+                largest_circle = circles[0][0]
+                cv.circle(frame_with_largest_circle, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 2)
+            """
             
             if len(contours) != 0:
                 # Find largest because that's probably the ball
@@ -92,7 +94,8 @@ class BallTracker:
                 (x, y), r = cv.minEnclosingCircle(largest_contour)
                 center = (int(x), int(y))
                 r = int(r)
-                
+                # TODO minimum contour size or minimum circle radius; it tends to see bits of the environment currently.
+                # TODO maybe also do a minimum area of the circle which the contour takes up? brainstorming ways to avoid seeing the box lids
                 if r > 0:
                     cv.circle(frame, center, r, (0, 255, 0), 2)
                     cv.circle(frame, center, 5, (0,0,255), -1)
