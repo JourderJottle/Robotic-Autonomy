@@ -289,9 +289,9 @@ class EKFVisualizer:
     def __init__(self):
         self.frame_width = 800
         self.frame_height = 600
-        self.observable_distance = 500  # Define max observable distance (in some units) # CHANGED
+        self.observable_distance = 50  # Define max observable distance (in some units)
         self.observable_angle = math.pi / 4  # Define observable angle (in radians)
-        self.minimum_observable_distance = 100  # Min observable distance               # CHANGED
+        self.minimum_observable_distance = 5  # Min observable distance
         self.scale = 10  # Scale factor to map to pixels
         self.queue_size = 10  # Number of observations to average
         self.observation_queue = deque(maxlen=self.queue_size)
@@ -312,14 +312,14 @@ class EKFVisualizer:
         display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
 
         # Add visual representation of the observable area
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), 
-                   (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)),
-                   0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
-                   (150, 0, 30), -1)
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height),
-                   (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)),
-                   0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
-                   (0, 0, 0), -1)
+        # cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), 
+        #            (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)),
+        #            0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
+        #            (150, 0, 30), -1)
+        # cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height),
+        #            (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)),
+        #            0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
+        #            (0, 0, 0), -1)
 
         # Get the current observation
         init_distance = data.data[0]
