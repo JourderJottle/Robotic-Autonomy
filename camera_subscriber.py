@@ -45,17 +45,15 @@ class BallTracker:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
             
-            # depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
-            x, y = self.ball_2d_data[0], self.ball_2d_data[1]
-            region = cv_img[max(0, y - 1):y + 2, max(0, x - 1):x + 2]
-            valid_depths = region[~np.isnan(region)]
-            if valid_depths.size > 0:
-                depth_at_center = np.mean(valid_depths)
-            else:
-                depth_at_center = 696.9696969696969
+        # depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
+        x, y = self.ball_2d_data[0], self.ball_2d_data[1]
+        region = cv_img[max(0, y - 2):y + 3, max(0, x - 2):x + 3]  # 5x5 region
 
-            self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
-            rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
+        # Use nanmean to automatically handle NaNs
+        depth_at_center = np.nanmean(region)
+
+        self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
+        rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
 
     def camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :
