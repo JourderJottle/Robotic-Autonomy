@@ -104,7 +104,7 @@ class BallTracker:
                     cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
 
                     theta = math.atan((center[0] - self.image_width) / self.focal_length)
-                    
+                    rospy.loginfo(f'Found ball at {center} with radius {r} and theta {theta}')
                     self.ball_2d_data = [center[0], center[1], theta]
             
             
