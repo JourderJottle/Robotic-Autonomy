@@ -52,7 +52,7 @@ class BallTracker:
             if valid_depths.size > 0:
                 depth_at_center = np.mean(valid_depths)
             else:
-                depth_at_center = np.nan
+                depth_at_center = 696.9696969696969
 
             self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
             rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
