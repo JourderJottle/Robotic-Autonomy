@@ -68,6 +68,7 @@ def ekf_predict(previous_state, previous_covariance, input, motion_model, motion
     
     # mult was wrong
     mult = dt * np.array(motion_model(input)).T
+    rospy.loginfo(f"Multi: {mult}")
     # mult = [dt * x for x in motion_model(input)]
     
     predicted_mean = previous_state + mult
