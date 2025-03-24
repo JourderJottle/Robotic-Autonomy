@@ -339,6 +339,7 @@ class EKFVisualizer:
 
         # Process only if the distance and angle are within the observable range
         if self.minimum_observable_distance < distance < self.observable_distance and abs(theta) < self.observable_angle:
+            rospy.loginfo(f'Processing observation: distance={distance}, theta={theta}')
             dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood())
 
             # Convert from polar to Cartesian coordinates
