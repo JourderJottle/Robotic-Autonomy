@@ -168,7 +168,7 @@ class BallLocalizer :
 
             self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
                
-        u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
+        u = (int(self.last_dist.u[1] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0] * self.scale))
         a = self.last_dist.S[0, 0]
         b = self.last_dist.S[0, 1]
         c = self.last_dist.S[1, 1]
