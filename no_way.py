@@ -312,14 +312,14 @@ class EKFVisualizer:
         display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
 
         # Add visual representation of the observable area
-        # cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), 
-        #            (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)),
-        #            0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
-        #            (150, 0, 30), -1)
-        # cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height),
-        #            (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)),
-        #            0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
-        #            (0, 0, 0), -1)
+        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), 
+                   (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)),
+                   0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
+                   (150, 0, 30), -1)
+        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height),
+                   (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)),
+                   0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
+                   (0, 0, 0), -1)
 
         # Get the current observation
         init_distance = data.data[0]
