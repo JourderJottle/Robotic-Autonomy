@@ -146,7 +146,7 @@ class BallLocalizer :
                 distance = self.distance_total / self.queue_size
                 theta = self.angle_total / self.queue_size
 
-        (predicted_mean, predicted_covariance) = ekf_predict(predicted_state=self.last_dist.u, predicted_covariance=self.last_dist.S, input=self.motion_control, motion_model=motion_model, motion_noise=self.motion_noise, dt=dt)
+        (predicted_mean, predicted_covariance) = ekf_predict(previous_state=self.last_dist.u, previous_covariance=self.last_dist.S, input=self.motion_control, motion_model=motion_model, motion_noise=self.motion_noise, dt=dt)
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
 
