@@ -67,8 +67,8 @@ def ekf_predict(previous_state, previous_covariance, input, motion_model, motion
     rospy.loginfo(f'dt is {dt}')
     
     # mult was wrong
-    # mult = dt * motion_model(input)
-    mult = [dt * x for x in motion_model(input)]
+    mult = dt * motion_model(input)
+    # mult = [dt * x for x in motion_model(input)]
     
     predicted_mean = previous_state + mult
     a1 = A @ previous_covariance
@@ -107,7 +107,7 @@ class BallLocalizer :
         self.observation_queue = deque()
         self.queue_size = 10
 
-        self.motion_control = [1, 0]
+        self.motion_control = np.matrix([[0], [1]])
         self.motion_noise = np.matrix([[0.0, 0.0], [0.0, 0.0]])
         self.last_dist = Gauss2D(np.array([0.0, 0.0]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
