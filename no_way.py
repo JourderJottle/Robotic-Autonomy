@@ -224,7 +224,7 @@ class ExtendedKalmanFilter():
                               [0.0, 0.0, 0.0]])
 
         # Initialize Time
-        self.last_time = rospy.get_time().toSec()
+        self.last_time = rospy.get_time()
 
     def get_dk(self):
 
@@ -232,7 +232,7 @@ class ExtendedKalmanFilter():
         dk = rospy.get_time().toSec() - self.last_time
 
         # Update Previous Time
-        self.last_time = rospy.get_time().toSec()
+        self.last_time = rospy.get_time()
 
         return dk
 
