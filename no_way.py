@@ -388,7 +388,7 @@ if __name__ == '__main__':
         visualizer = EKFVisualizer()
 
         # Initialize ROS Subscriber
-        rospy.Subscriber('/sensor/data', Float32MultiArray, visualizer.callback)
+        rospy.Subscriber('/ball_data', Float32MultiArray, visualizer.callback)
 
         while not rospy.is_shutdown():
             rospy.spin()
