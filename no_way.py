@@ -292,7 +292,7 @@ class EKFVisualizer:
         self.observable_distance = 50  # Define max observable distance (in some units)
         self.observable_angle = math.pi / 4  # Define observable angle (in radians)
         self.minimum_observable_distance = 5  # Min observable distance
-        self.scale = 10  # Scale factor to map to pixels
+        self.scale = 100  # Scale factor to map to pixels
         self.queue_size = 10  # Number of observations to average
         self.observation_queue = deque(maxlen=self.queue_size)
         self.distance_total = 0
