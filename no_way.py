@@ -308,7 +308,7 @@ class EKFVisualizer:
 
     def callback(self, data):
         """Data 0 is distance, Data 1 is theta"""
-        rospy.loginfo(f'Received data: {data.data}')
+        # rospy.loginfo(f'Received data: {data.data}')
         display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
 
         # Add visual representation of the observable area
@@ -336,10 +336,12 @@ class EKFVisualizer:
             self.observation_queue.popleft()
         distance = self.distance_total / self.queue_size
         theta = self.angle_total / self.queue_size
+        
+        rospy.loginfo(f'distance = {distance}, theta = {theta}\n min disntace = {self.minimum_observable_distance}, max distance = {self.observable_distance}, min angle = {-self.observable_angle}, max angle = {self.observable_angle}')
 
         # Process only if the distance and angle are within the observable range
         if self.minimum_observable_distance < distance < self.observable_distance and abs(theta) < self.observable_angle:
-            rospy.loginfo(f'Processing observation: distance={distance}, theta={theta}')
+            # rospy.loginfo(f'Processing observation: distance={distance}, theta={theta}')
             dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood())
 
             # Convert from polar to Cartesian coordinates
@@ -375,7 +377,8 @@ class EKFVisualizer:
             odom_msg.pose.pose.position = Point(estimated_position[0], estimated_position[1], 0)
             self.marker_pub.publish(odom_msg)
         else:
-            rospy.loginfo("Observation out of range")
+            # rospy.loginfo("Observation out of range")
+            blank = 1
 
         # Show the frame with visualizations
         cv.imshow('EKF Tracking Visualization', display_frame)
