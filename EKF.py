@@ -26,4 +26,5 @@ def correct(predicted_state, predicted_covariance, observation, sensor_model, se
 def motion_model(
     controls_array: np.ndarray
 ):
-    # FILL THIS
+    # Pass
+    return controls_array
