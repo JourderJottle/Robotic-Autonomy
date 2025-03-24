@@ -210,7 +210,7 @@ class ExtendedKalmanFilter():
                                [0.0],
                                [0.0]])
 
-        self.state_covariance = np.array([[0.0, 0.0, 0.0]
+        self.state_covariance = np.array([[0.0, 0.0, 0.0],
                                [0.0, 0.0, 0.0],
                                [0.0, 0.0, 0.0]])
 
@@ -219,7 +219,7 @@ class ExtendedKalmanFilter():
                             [0.0]])
 
         # Initalize Covarience Matricies: ASSUMES 3X1 STATE SPACE
-        self.state_covariance_matrix = np.array([[0.0, 0.0, 0.0]
+        self.state_covariance_matrix = np.array([[0.0, 0.0, 0.0],
                               [0.0, 0.0, 0.0],
                               [0.0, 0.0, 0.0]])
 
