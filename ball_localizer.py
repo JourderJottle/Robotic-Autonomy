@@ -96,7 +96,7 @@ class BallLocalizer :
 
         self.motion_control = [1, 0]
         self.motion_noise = np.matrix([[0.0, 0.0], [0.0, 0.0]])
-        self.last_dist = Gauss2D(0.0, np.matrix([[0.0, 0.0], [0.0, 0.0]]))
+        self.last_dist = Gauss2D(np.array([0.0, 0.0]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
         rospy.loginfo("Starting ball localizer...")
