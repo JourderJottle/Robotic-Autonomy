@@ -96,7 +96,7 @@ class BallLocalizer :
 
         self.motion_control = [1, 0]
         self.last_dist = None
-        self.last_time = rospy.get_time().toSec()
+        self.last_time = rospy.get_rostime().secs
 
         rospy.loginfo("Starting ball localizer...")
 
@@ -123,7 +123,7 @@ class BallLocalizer :
         distance = 0
         theta = 0
 
-        time = rospy.get_time().toSec()
+        time = rospy.get_rostime().secs
         dt = time - self.last_time
         self.last_time = time
 
