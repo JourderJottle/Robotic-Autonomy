@@ -39,6 +39,39 @@ def local_target_pose_to_global(target_pose: np.ndarray, sensor_translation: np.
     R_G = rotational_matrix(robot_theta)
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
 
+def motion_model(u) :
+    return u
+
+def sensor_model(x) :
+    return x
+
+def derive_gradient(func, location, dl) :
+    dimensions = len(location)
+    j1 = []
+    j2 = []
+    for i in range(dimensions) :
+        dx = np.zeros(dimensions)
+        dx[i] = dl / 2
+        x1 = location - dx
+        x2 = location + dx
+        j1.append(func(x1))
+        j2.append(func(x2))
+    return (np.array(j2) - np.array(j1)) / dl
+
+def ekf_predict(previous_state, previous_covariance, input, motion_model, motion_noise, dt) :
+    A = derive_gradient(motion_model, input, 0.1)
+    
+    # Returns (mean, covariance)
+    return (previous_state + dt * motion_model(input), A @ previous_covariance @ A.T + motion_noise)
+
+
+def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
+    C = derive_gradient(sensor_model, predicted_state, 0.1)
+    K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
+    
+    # Returns (mean, covariance)
+    return (predicted_state + K @ (observation - sensor_model(predicted_state)), (np.eye(len(predicted_state)) - K @ C) @ predicted_covariance)
+
 class BallLocalizer :
     def __init__(self) :
         rospy.init_node("ball_localizer", anonymous=True)
@@ -61,6 +94,12 @@ class BallLocalizer :
         self.observation_queue = deque()
         self.queue_size = 10
 
+        self.motion_control = [1, 0]
+        self.last_dist = None
+        self.last_time = rospy.get_time().toSec()
+
+        rospy.loginfo("Starting ball localizer...")
+
         rospy.spin()
 
     def variance(self) :
@@ -81,8 +120,14 @@ class BallLocalizer :
         cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
         cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
 
-        if data.data != None and len(data.data) > 0 :
+        distance = 0
+        theta = 0
 
+        time = rospy.get_time().toSec()
+        dt = time - self.last_time
+        self.last_time = time
+
+        if data.data != None and len(data.data) > 0 :
             init_distance = data.data[0]
             init_theta = data.data[1]
             distance = init_distance
@@ -97,22 +142,29 @@ class BallLocalizer :
                 distance = self.distance_total / self.queue_size
                 theta = self.angle_total / self.queue_size
 
-            if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
-                
-                dist = gauss2D_from_polar(distance, theta, self.variance())
-                
-                u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
-                a = dist.S[0, 0]
-                b = dist.S[0, 1]
-                c = dist.S[1, 1]
-                
-                l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
-                l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+        (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, dt)
 
-                angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+        if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
 
-                cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
-        
+            dist = gauss2D_from_polar(distance, theta, self.variance())
+            (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, sensor_model, dist.S)
+            self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
+
+        else :
+
+            self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
+               
+        u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
+        a = self.last_dist.S[0, 0]
+        b = self.last_dist.S[0, 1]
+        c = self.last_dist.S[1, 1]
+                
+        l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+        l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+
+        angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+
+        cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
 
         cv.imshow('Space', display_frame)
         if cv.waitKey(10) & 0xFF == ord('b'):
