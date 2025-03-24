@@ -292,7 +292,7 @@ class EKFVisualizer:
         self.observable_distance = 50  # Define max observable distance (in some units)
         self.observable_angle = math.pi / 4  # Define observable angle (in radians)
         self.minimum_observable_distance = 5  # Min observable distance
-        self.scale = 100  # Scale factor to map to pixels
+        self.scale = 10  # Scale factor to map to pixels
         self.queue_size = 10  # Number of observations to average
         self.observation_queue = deque(maxlen=self.queue_size)
         self.distance_total = 0
@@ -340,50 +340,75 @@ class EKFVisualizer:
         rospy.loginfo(f'distance = {distance}, theta = {theta}\n min disntace = {self.minimum_observable_distance}, max distance = {self.observable_distance}, min angle = {-self.observable_angle}, max angle = {self.observable_angle}')
 
         # Process only if the distance and angle are within the observable range
-        if self.minimum_observable_distance < distance < self.observable_distance and abs(theta) < self.observable_angle:
-            # rospy.loginfo(f'Processing observation: distance={distance}, theta={theta}')
-            dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood())
+        
+        ekf = False
+        
+        if ekf:
+        
+            if self.minimum_observable_distance < distance < self.observable_distance and abs(theta) < self.observable_angle:
+                # rospy.loginfo(f'Processing observation: distance={distance}, theta={theta}')
+                dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood())
 
-            # Convert from polar to Cartesian coordinates
-            u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
+                # Convert from polar to Cartesian coordinates
+                u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
 
-            # Ellipse parameters for uncertainty
-            a = dist.S[0, 0]
-            b = dist.S[0, 1]
-            c = dist.S[1, 1]
+                # Ellipse parameters for uncertainty
+                a = dist.S[0, 0]
+                b = dist.S[0, 1]
+                c = dist.S[1, 1]
 
-            # Calculate eigenvalues to define the ellipse
-            l1 = (a + c) / 2 + math.sqrt(((a - c) / 2) ** 2 + b ** 2)
-            l2 = (a + c) / 2 - math.sqrt(((a - c) / 2) ** 2 + b ** 2)
+                # Calculate eigenvalues to define the ellipse
+                l1 = (a + c) / 2 + math.sqrt(((a - c) / 2) ** 2 + b ** 2)
+                l2 = (a + c) / 2 - math.sqrt(((a - c) / 2) ** 2 + b ** 2)
 
-            # Angle of the ellipse
-            angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+                # Angle of the ellipse
+                angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
 
-            # Draw the ellipse
-            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)),
-                       math.degrees(angle), 0, 360, (255, 255, 255), -1)
+                # Draw the ellipse
+                cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)),
+                        math.degrees(angle), 0, 360, (255, 255, 255), -1)
 
-            # EKF state update
-            predicted_state, predicted_covariance = self.EKF.update(np.array([distance, theta]))  # Assuming measurement is distance, theta
-            estimated_position = predicted_state[:2]  # Get the estimated position (x, y)
+                # EKF state update
+                predicted_state, predicted_covariance = self.EKF.update(np.array([distance, theta]))  # Assuming measurement is distance, theta
+                estimated_position = predicted_state[:2]  # Get the estimated position (x, y)
 
-            # Draw the estimated position from EKF
-            estimated_pos_x = int(estimated_position[0] * self.scale + self.frame_width / 2)
-            estimated_pos_y = int(self.frame_height - estimated_position[1] * self.scale)
-            cv.circle(display_frame, (estimated_pos_x, estimated_pos_y), 5, (0, 255, 0), -1)
+                # Draw the estimated position from EKF
+                estimated_pos_x = int(estimated_position[0] * self.scale + self.frame_width / 2)
+                estimated_pos_y = int(self.frame_height - estimated_position[1] * self.scale)
+                cv.circle(display_frame, (estimated_pos_x, estimated_pos_y), 5, (0, 255, 0), -1)
 
-            # Optionally, publish the estimated state as Odometry message
-            odom_msg = Odometry()
-            odom_msg.pose.pose.position = Point(estimated_position[0], estimated_position[1], 0)
-            self.marker_pub.publish(odom_msg)
+                # Optionally, publish the estimated state as Odometry message
+                odom_msg = Odometry()
+                odom_msg.pose.pose.position = Point(estimated_position[0], estimated_position[1], 0)
+                self.marker_pub.publish(odom_msg)
+            else:
+                # rospy.loginfo("Observation out of range")
+                blank = 1
+
+            # Show the frame with visualizations
+            cv.imshow('EKF Tracking Visualization', display_frame)
+            if cv.waitKey(10) & 0xFF == ord('b'):
+                rospy.signal_shutdown("Shutting down")
         else:
-            # rospy.loginfo("Observation out of range")
-            blank = 1
+            if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
+                
+                dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood())
 
-        # Show the frame with visualizations
-        cv.imshow('EKF Tracking Visualization', display_frame)
-        if cv.waitKey(10) & 0xFF == ord('b'):
-            rospy.signal_shutdown("Shutting down")
+                u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
+                a = dist.S[0, 0]
+                b = dist.S[0, 1]
+                c = dist.S[1, 1]
+                
+                l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+                l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+
+                angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+
+                cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
+            cv.imshow('Space', display_frame)
+            if cv.waitKey(10) & 0xFF == ord('b'):
+                rospy.signal_shutdown("Shutting down")
+            
 
 if __name__ == '__main__':
     try:
