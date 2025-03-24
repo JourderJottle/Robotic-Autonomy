@@ -45,7 +45,7 @@ class BallTracker:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
         
-        rospy.loginfo(f'Found ball at {self.ball_2d_data[0], self.ball_2d_data[1]}')
+        rospy.loginfo(f'Found ball at {self.ball_2d_data[0], self.ball_2d_data[1]}\nso depth is {cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]}')
         
         # depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
         x, y = self.ball_2d_data[0], self.ball_2d_data[1]
