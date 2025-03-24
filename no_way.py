@@ -375,7 +375,7 @@ class EKFVisualizer:
 
         # Process only if the distance and angle are within the observable range
         
-        ekf = False
+        ekf = True
         
         if ekf:
         
