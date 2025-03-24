@@ -122,6 +122,8 @@ class BallTracker:
                     theta = math.atan((center[0] - self.image_width) / self.focal_length)
                     # rospy.loginfo(f'Found ball at {center} with radius {r:.2f} and theta {theta:.2f}')
                     self.ball_2d_data = [center[0], center[1], theta]
+            else:
+                self.ball_2d_data = None
             
             
         # Display the resulting frame
