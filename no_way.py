@@ -83,7 +83,7 @@ class ConstantVelocityMotionModel():
         return sXkGkmve1
         
 
-class SensorModel():
+class SensorModelClass():
     '''
     Object representing a sensor model for 2D position measurements. Assumes direct 2D position measurement (x, y).
     Can be extended for more complex measurements.
@@ -303,7 +303,7 @@ class EKFVisualizer:
 
         # Initialize EKF (Assuming the EKF class is already created)
         MotionModel = ConstantVelocityMotionModel()
-        SensorModel = SensorModel()
+        SensorModel = SensorModelClass()
         self.EKF = ExtendedKalmanFilter(MotionModel, SensorModel)
 
     def callback(self, data):
