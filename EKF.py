@@ -20,4 +20,10 @@ def predict(previous_state, previous_covariance, input, motion_model, motion_noi
 def correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
     C = derive_gradient(sensor_model, predicted_state, 0.1)
     K = predicted_covariance @ C.T @ np.linalg.inv(C @ predicted_covariance @ C.T + sensor_noise)
-    return (predicted_state + K @ (observation - sensor_model(predicted_state)), (np.diag(np.ones(3)) - K @ C) @ predicted_covariance)
+    return (predicted_state + K @ (observation - sensor_model(predicted_state)), (np.eye(len(predicted_state)) - K @ C) @ predicted_covariance)
+
+
+def motion_model(
+    controls_array: np.ndarray
+):
+    # FILL THIS
