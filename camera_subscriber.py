@@ -46,8 +46,8 @@ class BallTracker:
                 
                 x, y, theta = self.ball_2d_data[0], self.ball_2d_data[1], self.ball_2d_data[2]
                 
-                # 
-                
+                # show depth map
+                cv.imshow('Depth', cv_img)
                 
                 depth_at_center = cv_img[y][x]
                 if depth_at_center != 0:
