@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 import numpy as np
 import cv2 as cv
 import math
@@ -7,7 +10,6 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point
 from std_msgs.msg import Float32MultiArray
 
-#!/usr/bin/env python
 
 # Import Numpy
 import numpy as np
