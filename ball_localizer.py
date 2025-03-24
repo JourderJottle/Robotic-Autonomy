@@ -60,7 +60,10 @@ def derive_gradient(func, location, dl) :
 
 def ekf_predict(previous_state, previous_covariance, input, motion_model, motion_noise, dt) :
     A = derive_gradient(motion_model, input, 0.1)
-    predicted_mean = previous_state + dt * motion_model(input)
+    
+    mult = dt * motion_model(input)
+    
+    predicted_mean = previous_state + mult
     a1 = A @ previous_covariance
     a2 = a1 @ A.T
     predicted_covariance = a2 + motion_noise
