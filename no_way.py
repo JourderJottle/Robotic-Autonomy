@@ -287,16 +287,33 @@ class ExtendedKalmanFilter():
 
 class EKFVisualizer:
     def __init__(self):
-        self.frame_width = 800
-        self.frame_height = 600
-        self.observable_distance = 50  # Define max observable distance (in some units)
-        self.observable_angle = math.pi / 4  # Define observable angle (in radians)
-        self.minimum_observable_distance = 5  # Min observable distance
-        self.scale = 10  # Scale factor to map to pixels
-        self.queue_size = 10  # Number of observations to average
-        self.observation_queue = deque(maxlen=self.queue_size)
-        self.distance_total = 0
+        # self.frame_width = 800
+        # self.frame_height = 600
+        # self.observable_distance = 50  # Define max observable distance (in some units)
+        # self.observable_angle = math.pi / 4  # Define observable angle (in radians)
+        # self.minimum_observable_distance = 5  # Min observable distance
+        # self.scale = 10  # Scale factor to map to pixels
+        # self.queue_size = 10  # Number of observations to average
+        # self.observation_queue = deque(maxlen=self.queue_size)
+        # self.distance_total = 0
+        # self.angle_total = 0
+        
+        # checked via tape measurer
+        self.observable_distance = 3048
+        # checked via moving ball towards camera to find minimum computed distance
+        self.minimum_observable_distance = 200
+        # checked via moving ball to edge of camera FOV to check angle
+        self.observable_angle = 0.63
+        self.scale = 1 / 5
+        self.frame_height = int(self.observable_distance * self.scale)
+        self.frame_width = int(self.observable_distance * math.sin(self.observable_angle) * 2 * self.scale)
+        self.distance_noise = 0.05
+        self.angle_noise = 0.01
+
         self.angle_total = 0
+        self.distance_total = 0
+        self.observation_queue = deque()
+        self.queue_size = 10
 
         # Initialize ROS publisher
         self.marker_pub = rospy.Publisher('/ekf/estimated_state', Odometry, queue_size=10)
@@ -309,17 +326,21 @@ class EKFVisualizer:
     def callback(self, data):
         """Data 0 is distance, Data 1 is theta"""
         # rospy.loginfo(f'Received data: {data.data}')
-        display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
+        # display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
 
-        # Add visual representation of the observable area
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), 
-                   (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)),
-                   0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
-                   (150, 0, 30), -1)
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height),
-                   (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)),
-                   0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
-                   (0, 0, 0), -1)
+        # # Add visual representation of the observable area
+        # cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), 
+        #            (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)),
+        #            0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
+        #            (150, 0, 30), -1)
+        # cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height),
+        #            (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)),
+        #            0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), 
+        #            (0, 0, 0), -1)
+        display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
+        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
+        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
+
 
         # Get the current observation
         init_distance = data.data[0]
