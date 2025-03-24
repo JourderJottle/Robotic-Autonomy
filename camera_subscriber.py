@@ -16,7 +16,7 @@ class BallTracker:
         self.bridge = CvBridge()
         
         # Publish ball data
-        self.ball_data_pub = rospy.Publisher("/ball_data", Float32MultiArray, queue_size=1)
+        self.ball_data_pub = rospy.Publisher("/ball_data", Float32MultiArray, queue_size=10)
 
         # Subscribe to the depth camera feed
         
@@ -49,7 +49,7 @@ class BallTracker:
                 # 
                 
                 
-                depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
+                depth_at_center = cv_img[y][x]
                 if depth_at_center != 0:
                     self.past_depth = depth_at_center
                 else:
@@ -59,10 +59,10 @@ class BallTracker:
                 
                 rospy.loginfo(f'Found ball at {x, y}\nso depth is {depth_at_center:.2f}')
                 
-                # region = cv_img[max(0, y - 2):y + 3, max(0, x - 2):x + 3]  # 5x5 region
+                region = cv_img[max(0, y - 2):y + 3, max(0, x - 2):x + 3]  # 5x5 region
 
-                # # Use nanmean to automatically handle NaNs
-                # depth_at_center = np.nanmean(region)
+                # Use nanmean to automatically handle NaNs
+                depth_at_center = np.nanmean(region)
 
                 self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
                 # rospy.loginfo(f'Published d = {depth_at_center:.2f} and theta = {self.ball_2d_data[2]:.2f}')
