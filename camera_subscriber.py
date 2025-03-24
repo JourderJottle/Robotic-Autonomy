@@ -53,7 +53,7 @@ class BallTracker:
         depth_at_center = np.nanmean(region)
 
         self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
-        rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
+        rospy.loginfo(f'Published d = {depth_at_center:.2f} and theta = {self.ball_2d_data[2]:.2f}')
 
     def camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :
@@ -104,7 +104,7 @@ class BallTracker:
                     cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
 
                     theta = math.atan((center[0] - self.image_width) / self.focal_length)
-                    rospy.loginfo(f'Found ball at {center} with radius {r} and theta {theta}')
+                    rospy.loginfo(f'Found ball at {center} with radius {r:.2f} and theta {theta:.2f}')
                     self.ball_2d_data = [center[0], center[1], theta]
             
             
