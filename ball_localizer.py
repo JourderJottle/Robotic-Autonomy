@@ -107,7 +107,7 @@ class BallLocalizer :
         self.observation_queue = deque()
         self.queue_size = 10
 
-        self.motion_control = np.array([[0], [1]])
+        self.motion_control = np.array([0, 1])
         self.motion_noise = np.matrix([[0.0, 0.0], [0.0, 0.0]])
         self.last_dist = Gauss2D(np.array([0.0, 0.0]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
