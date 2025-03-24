@@ -134,7 +134,7 @@ class BallLocalizer :
         distance = 0
         theta = 0
 
-        time = rospy.get_rostime().secs
+        time = rospy.get_rostime().to_sec()
         dt = time - self.last_time
         self.last_time = time
 
