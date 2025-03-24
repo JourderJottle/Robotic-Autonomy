@@ -373,6 +373,8 @@ class EKFVisualizer:
             odom_msg = Odometry()
             odom_msg.pose.pose.position = Point(estimated_position[0], estimated_position[1], 0)
             self.marker_pub.publish(odom_msg)
+        else:
+            rospy.loginfo("Observation out of range")
 
         # Show the frame with visualizations
         cv.imshow('EKF Tracking Visualization', display_frame)
