@@ -14,14 +14,10 @@ import numpy as np
 
 # Import Probabilistic Models
 
-# from diff_motion_professor import MotionModel as MotionModel
-from RGBDSensorModel2d import RGBDSensorModel2d as SensorModel
 
 # Import ROS Dependencies
 import rospy
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, Quaternion, Vector3, Point
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from std_msgs.msg import Float32MultiArray
 
 class ConstantVelocityMotionModel(Object):
