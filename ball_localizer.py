@@ -107,8 +107,8 @@ class BallLocalizer :
         self.observation_queue = deque()
         self.queue_size = 10
 
-        self.motion_control = np.array([0, 1000])
-        self.motion_noise = np.matrix([[0.0, 0.0], [0.0, 0.0]])
+        self.motion_control = np.array([0, 0])
+        self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
         self.last_dist = Gauss2D(np.array([[0.0], [0.0]]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
@@ -173,7 +173,7 @@ class BallLocalizer :
 
             angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
 
-            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 255, 0), -1)
+            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 0, 0), -1)
 
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
