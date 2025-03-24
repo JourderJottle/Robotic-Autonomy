@@ -16,7 +16,7 @@ class BallTracker:
         self.bridge = CvBridge()
         
         # Publish ball data
-        self.ball_data_pub = rospy.Publisher("/ball_data", Float32MultiArray, queue_size=10)
+        self.ball_data_pub = rospy.Publisher("/ball_data", Float32MultiArray, queue_size=1)
 
         # Subscribe to the depth camera feed
         
