@@ -95,7 +95,7 @@ class BallLocalizer :
         self.queue_size = 10
 
         self.motion_control = [1, 0]
-        self.last_dist = Gauss2D(0, np.matrix([[0, 0], [0, 0]]))
+        self.last_dist = Gauss2D(0.0, np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
         rospy.loginfo("Starting ball localizer...")
