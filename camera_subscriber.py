@@ -97,7 +97,7 @@ class BallTracker:
                 (x, y), r = cv.minEnclosingCircle(largest_contour)
                 center = (int(x), int(y))
                 
-                if r > 1:
+                if r > 10:
                     r = int(r)
                     cv.circle(frame, center, r, (0, 255, 0), 2)
                     cv.circle(frame, center, 5, (0,0,255), -1)
