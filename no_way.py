@@ -308,6 +308,7 @@ class EKFVisualizer:
 
     def callback(self, data):
         """Data 0 is distance, Data 1 is theta"""
+        rospy.loginfo(f'Received data: {data.data}')
         display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
 
         # Add visual representation of the observable area
