@@ -60,17 +60,14 @@ def derive_gradient(func, location, dl) :
 
 def ekf_predict(previous_state, previous_covariance, input, motion_model, motion_noise, dt) :
     A = derive_gradient(motion_model, input, 0.1)
-    
+    """
     rospy.loginfo(f'options of input {input[0]} and {input[1]}')
     rospy.loginfo(f"Input: {motion_model(input)}")
     rospy.loginfo(f"A: {A}")
     rospy.loginfo(f'dt is {dt}')
-    
-    # mult was wrong
+    """
     mult = dt * np.matrix(motion_model(input)).T
-    rospy.loginfo(f"Mult: {mult}")
-    # mult = [dt * x for x in motion_model(input)]
-    
+    # rospy.loginfo(f"Mult: {mult}")    
     predicted_mean = previous_state + mult
     a1 = A @ previous_covariance
     a2 = a1 @ A.T
@@ -81,8 +78,8 @@ def ekf_predict(previous_state, previous_covariance, input, motion_model, motion
 
 def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
     C = derive_gradient(sensor_model, np.array(predicted_state.T)[0], 0.1)
-    rospy.loginfo(f"C: {C}")
-    rospy.loginfo(f"Pred State T: {np.array(predicted_state.T)[0]}")
+    # rospy.loginfo(f"C: {C}")
+    # rospy.loginfo(f"Pred State T: {np.array(predicted_state.T)[0]}")
     K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
     
     # Returns (mean, covariance)
@@ -171,7 +168,8 @@ class BallLocalizer :
         else :
 
             self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
-               
+        
+        rospy.loginfo(f"{self.last_dist.u} {self.last_dist.S}")
         u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
         a = self.last_dist.S[0, 0]
         b = self.last_dist.S[0, 1]
