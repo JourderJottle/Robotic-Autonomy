@@ -162,6 +162,19 @@ class BallLocalizer :
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
 
             dist = gauss2D_from_polar(distance, theta, self.variance())
+
+            u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
+            a = dist.S[0, 0]
+            b = dist.S[0, 1]
+            c = dist.S[1, 1]
+                
+            l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+            l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+
+            angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+
+            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 255, 0), -1)
+
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
 
