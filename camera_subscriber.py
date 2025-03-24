@@ -41,6 +41,7 @@ class BallTracker:
         if self.ball_2d_data != None :
             try :
                 cv_img = self.bridge.imgmsg_to_cv2(data, "32FC1")
+                rospy.loginfo(f"Depth Frame Shape: {cv_img.shape}")
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
@@ -62,6 +63,7 @@ class BallTracker:
             try:
                 # Convert the ROS Image message to OpenCV format
                 frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
+                rospy.loginfo(f"Color Image Frame Shape: {frame.shape}")
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
