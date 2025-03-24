@@ -80,7 +80,6 @@ def ekf_predict(previous_state, previous_covariance, input, motion_model, motion
 
 def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
     C = derive_gradient(sensor_model, predicted_state, 0.1)
-    rospy.loginfo(f"C: {C}")
     K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
     
     # Returns (mean, covariance)
@@ -158,6 +157,7 @@ class BallLocalizer :
                 theta = self.angle_total / self.queue_size
 
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
+        rospy.loginfo(f"Predicted State: {predicted_mean}")
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
 
