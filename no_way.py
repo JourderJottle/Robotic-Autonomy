@@ -22,7 +22,7 @@ import rospy
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32MultiArray
 
-class ConstantVelocityMotionModel(Object):
+class ConstantVelocityMotionModel():
     
     def __init__(self, W=np.array([[0.0],[0.0],[0.0],[0.0]])):
         # State transition matrix for constant velocity model (4x4)
@@ -83,7 +83,7 @@ class ConstantVelocityMotionModel(Object):
         return sXkGkmve1
         
 
-class SensorModel(Object):
+class SensorModel():
     '''
     Object representing a sensor model for 2D position measurements. Assumes direct 2D position measurement (x, y).
     Can be extended for more complex measurements.
@@ -183,7 +183,7 @@ def local_target_pose_to_global(target_pose: np.ndarray, sensor_translation: np.
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
 
          
-class ExtendedKalmanFilter(Object):
+class ExtendedKalmanFilter():
 
     '''
     Object representing the Extended Kalman Filter. Assumes 3x1 State Space (To be updated later).
