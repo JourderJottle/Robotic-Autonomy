@@ -61,7 +61,7 @@ def derive_gradient(func, location, dl) :
 def ekf_predict(previous_state, previous_covariance, input, motion_model, motion_noise, dt) :
     A = derive_gradient(motion_model, input, 0.1)
     
-    rospy.loginfo(f'options of input {dir(input)}')
+    rospy.loginfo(f'options of input {input[0]} and {input[1]}')
     rospy.loginfo(f"Input: {motion_model(input)}")
     rospy.loginfo(f"A: {A}")
     rospy.loginfo(f'dt is {dt}')
