@@ -82,7 +82,7 @@ def ekf_predict(previous_state, previous_covariance, input, motion_model, motion
 def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
     C = derive_gradient(sensor_model, predicted_state.T, 0.1)
     rospy.loginfo(f"C: {C}")
-    rospy.loginfo(f"Pred State T: {predicted_state.T[0]}")
+    rospy.loginfo(f"Pred State T: {np.array(predicted_state.T)}")
     K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
     
     # Returns (mean, covariance)
