@@ -45,7 +45,6 @@ class BallTracker:
                 ## Thus, save the previous value and if the ball is inframe but it says zero, use the old number
                 
                 x, y = self.ball_2d_data[0], self.ball_2d_data[1]
-                rospy.loginfo(f'Found ball at {x, y}\nso depth is {cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]}')
                 
                 # 
                 
@@ -58,6 +57,7 @@ class BallTracker:
                     depth_at_center = self.past_depth
                 
                 
+                rospy.loginfo(f'Found ball at {x, y}\nso depth is {depth_at_center:.2f}')
                 
                 # region = cv_img[max(0, y - 2):y + 3, max(0, x - 2):x + 3]  # 5x5 region
 
