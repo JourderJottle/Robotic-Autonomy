@@ -95,6 +95,7 @@ class BallLocalizer :
         self.queue_size = 10
 
         self.motion_control = [1, 0]
+        self.motion_noise = np.matrix([[0.0, 0.0], [0.0, 0.0]])
         self.last_dist = Gauss2D(0.0, np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
@@ -142,7 +143,7 @@ class BallLocalizer :
                 distance = self.distance_total / self.queue_size
                 theta = self.angle_total / self.queue_size
 
-        (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, dt)
+        (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
 
