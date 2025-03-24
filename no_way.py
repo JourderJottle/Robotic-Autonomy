@@ -198,6 +198,18 @@ class ExtendedKalmanFilter():
                 mXkGk (float []): Mean Array of Estiamted State Space. (Mean of X_k given k)
                 pXkGk (float []): Covariance Matrix of Estiamted State Space. (Covariance of X_k given k)
     '''
+
+    def variance_of_likelihood(self) :
+        u_d = self.distance_total / self.queue_size
+        u_theta = self.angle_total / self.queue_size
+        v_d = 0
+        v_theta = 0
+        for o in self.observation_queue :
+            v_d += (o[0] - u_d)**2
+            v_theta += (o[1] - u_theta)**2
+        S_d = math.sqrt(v_d / self.queue_size)
+        S_theta = math.sqrt(v_theta / self.queue_size)
+        return np.matrix([[S_d + u_d * self.distance_noise, 0], [0, S_theta + u_d * self.angle_noise]])
     
     def __init__(self, motion_model, sensor_model):
 
