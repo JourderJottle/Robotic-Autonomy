@@ -41,21 +41,35 @@ class BallTracker:
         if self.ball_2d_data != None :
             try :
                 cv_img = self.bridge.imgmsg_to_cv2(data, "32FC1")
+                ### Hmmm, the problem is that we always have the x,y but sometimes the depth is zero at that point
+                ## Thus, save the previous value and if the ball is inframe but it says zero, use the old number
+                
+                x, y = self.ball_2d_data[0], self.ball_2d_data[1]
+                rospy.loginfo(f'Found ball at {x, y}\nso depth is {cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]}')
+                
+                # 
+                
+                
+                depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
+                if depth_at_center != 0:
+                    self.past_depth = depth_at_center
+                else:
+                    # depth is zero so use the past depth
+                    depth_at_center = self.past_depth
+                
+                
+                
+                # region = cv_img[max(0, y - 2):y + 3, max(0, x - 2):x + 3]  # 5x5 region
+
+                # # Use nanmean to automatically handle NaNs
+                # depth_at_center = np.nanmean(region)
+
+                self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
+                # rospy.loginfo(f'Published d = {depth_at_center:.2f} and theta = {self.ball_2d_data[2]:.2f}')
+
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
-        
-        rospy.loginfo(f'Found ball at {self.ball_2d_data[0], self.ball_2d_data[1]}\nso depth is {cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]}')
-        
-        # depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
-        x, y = self.ball_2d_data[0], self.ball_2d_data[1]
-        region = cv_img[max(0, y - 2):y + 3, max(0, x - 2):x + 3]  # 5x5 region
-
-        # Use nanmean to automatically handle NaNs
-        depth_at_center = np.nanmean(region)
-
-        self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
-        # rospy.loginfo(f'Published d = {depth_at_center:.2f} and theta = {self.ball_2d_data[2]:.2f}')
 
     def camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :
