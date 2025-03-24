@@ -49,6 +49,8 @@ class BallTracker:
 
             self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
             rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
+        else :
+            self.ball_data_pub.publish(Float32MultiArray(data=None))
 
     def camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :
@@ -86,6 +88,12 @@ class BallTracker:
                 largest_circle = circles[0][0]
                 cv.circle(frame_with_largest_circle, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 2)
             """
+
+            largest_contour = None
+            x = 0
+            y = 0
+            r = 0
+            center = (0, 0)
             
             if len(contours) != 0:
                 # Find largest because that's probably the ball
@@ -94,16 +102,18 @@ class BallTracker:
                 (x, y), r = cv.minEnclosingCircle(largest_contour)
                 center = (int(x), int(y))
                 r = int(r)
-                # TODO minimum contour size or minimum circle radius; it tends to see bits of the environment currently.
-                # TODO maybe also do a minimum area of the circle which the contour takes up? brainstorming ways to avoid seeing the box lids
-                if r > 0:
-                    cv.circle(frame, center, r, (0, 255, 0), 2)
-                    cv.circle(frame, center, 5, (0,0,255), -1)
-                    cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
+                # minimum circle radius; it tends to see bits of the environment currently.
+                # also do a minimum area of the circle which the contour takes up? brainstorming ways to avoid seeing the box lids
+            if r > 20 and cv.contourArea(largest_contour) / (math.pi * r**2) > 0.3 :
+                cv.circle(frame, center, r, (0, 255, 0), 2)
+                cv.circle(frame, center, 5, (0,0,255), -1)
+                cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
 
-                    theta = math.atan((center[0] - self.image_width) / self.focal_length)
+                theta = math.atan((center[0] - self.image_width) / self.focal_length)
                     
-                    self.ball_2d_data = [center[0], center[1], theta]
+                self.ball_2d_data = [center[0], center[1], theta]
+            else :
+                self.ball_2d_data = None
             
             
         # Display the resulting frame

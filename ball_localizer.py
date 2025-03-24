@@ -63,7 +63,7 @@ class BallLocalizer :
 
         rospy.spin()
 
-    def variance_of_likelihood(self) :
+    def variance(self) :
         u_d = self.distance_total / self.queue_size
         u_theta = self.angle_total / self.queue_size
         v_d = 0
@@ -78,39 +78,41 @@ class BallLocalizer :
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
         display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
+        if data.data != None :
+            cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
+            cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
 
-        init_distance = data.data[0]
-        init_theta = data.data[1]
-        distance = init_distance
-        theta = init_theta
-        self.distance_total += init_distance
-        self.angle_total += init_theta
-        self.observation_queue.append((init_distance, init_theta))
-        if len(self.observation_queue) >= self.queue_size :
-            self.distance_total -= self.observation_queue[0][0]
-            self.angle_total -= self.observation_queue[0][1]
-            self.observation_queue.popleft()
-            distance = self.distance_total / self.queue_size
-            theta = self.angle_total / self.queue_size
+            init_distance = data.data[0]
+            init_theta = data.data[1]
+            distance = init_distance
+            theta = init_theta
+            self.distance_total += init_distance
+            self.angle_total += init_theta
+            self.observation_queue.append((init_distance, init_theta))
+            if len(self.observation_queue) >= self.queue_size :
+                self.distance_total -= self.observation_queue[0][0]
+                self.angle_total -= self.observation_queue[0][1]
+                self.observation_queue.popleft()
+                distance = self.distance_total / self.queue_size
+                theta = self.angle_total / self.queue_size
 
-        if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
-            
-            dist = gauss2D_from_polar(distance, theta, self.variance_of_likelihood())
+            if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
+                
+                dist = gauss2D_from_polar(distance, theta, self.variance())
+                
+                u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
+                a = dist.S[0, 0]
+                b = dist.S[0, 1]
+                c = dist.S[1, 1]
+                
+                l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+                l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
 
-            u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
-            a = dist.S[0, 0]
-            b = dist.S[0, 1]
-            c = dist.S[1, 1]
-            
-            l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
-            l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+                angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
 
-            angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+                cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
+        
 
-            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
-            
         cv.imshow('Space', display_frame)
         if cv.waitKey(10) & 0xFF == ord('b'):
             rospy.signal_shutdown("Shutting down")
