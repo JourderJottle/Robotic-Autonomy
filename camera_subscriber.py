@@ -46,13 +46,6 @@ class BallTracker:
                 return
             x = self.ball_2d_data[0]
             y = self.ball_2d_data[1]
-
-            #cv.circle(cv_img, (x, y), 5, (0,0,255), -1)
-            # Display the resulting frame
-            cv.imshow('Depth Video', cv_img)
-            #cv.imshow('Mask', mask)
-            if cv.waitKey(10) & 0xFF == ord('b'):
-                rospy.signal_shutdown("Shutting down")
             
             depth_at_center = cv_img[y][x]
 
