@@ -26,19 +26,11 @@ class BallTracker:
         # Subscribe to the color camera feed
         self.ball_2d_data = None
         rospy.Subscriber("/camera/color/image_raw", Image, self.color_callback)
-
-        # Camera frame transformations
-        self.KcI = np.array([])
-        self.Kd = np.array([])
-        self.cdRotation = np.array([])
-        self.cdTranslation = np.array([])
         
         # Subscribe to depth camera info for focal length
         self.focal_length = None
         self.image_width = None
-        rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo, self.depth_camera_info_callback)
         rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
-        rospy.Subscriber("/camera/extrinsics/depth_to_color", Extrinsics, self.depth_to_color_extrinsics_callback)
 
         rospy.loginfo("Ball Tracker Node Initialized")
         
@@ -54,11 +46,7 @@ class BallTracker:
                 return
             x = self.ball_2d_data[0]
             y = self.ball_2d_data[1]
-            coords = np.array([[x], [y], [0]])
-            new_coords = coords # self.Kd @ (self.cdRotation @ (self.KcI @ coords) + self.cdTranslation)
-            x = int(new_coords[0, 0])
-            y = int(new_coords[1, 0])
-            rospy.loginfo(f"New Coords: {new_coords}")
+
             cv.circle(cv_img, (x, y), 5, (0,0,255), -1)
             # Display the resulting frame
             cv.imshow('Depth Video', cv_img)
@@ -74,19 +62,9 @@ class BallTracker:
             self.ball_data_pub.publish(Float32MultiArray(data=None))
 
     def color_camera_info_callback(self, data):
-        if self.focal_length == None or self.image_width == None or not self.KcI.any() :
+        if self.focal_length == None or self.image_width == None :
             self.focal_length = data.K[0]
             self.image_width = data.K[2]
-            self.KcI = np.linalg.pinv(np.matrix([data.K[0:3], data.K[3:6], data.K[6:9]]))
-
-    def depth_camera_info_callback(self, data):
-        if not self.Kd.any() :
-            self.Kd = np.matrix([data.K[0:3], data.K[3:6], data.K[6:9]])
-
-    def depth_to_color_extrinsics_callback(self, data) :
-        if not self.cdRotation.any() or not self.cdTranslation.any() :
-            self.cdRotation = np.matrix([data.rotation[0:3], data.rotation[3:6], data.rotation[6:9]]).T
-            self.cdTranslation = -np.matrix(data.translation).T
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
