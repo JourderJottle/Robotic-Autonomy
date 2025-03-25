@@ -57,6 +57,7 @@ class BallTracker:
             coords = np.array([[x], [y], [0]])
             depth_coords_3d = self.cdRotation @ (self.KcI @ coords) + self.cdTranslation
             depth_coords_3d_1 = np.matrix([depth_coords_3d[0, 0], depth_coords_3d[1, 0], depth_coords_3d[2, 0], 1])
+            rospy.loginfo(f"{self.Pd}")
             new_coords = self.Pd @ depth_coords_3d_1
             x = int(new_coords[0, 0])
             y = int(new_coords[1, 0])
