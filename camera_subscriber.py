@@ -38,7 +38,7 @@ class BallTracker:
         rospy.spin()
 
     def d_and_theta_callback(self, data) :
-        if self.ball_2d_data != None :
+        if len(self.ball_2d_data) > 0 :
             try :
                 cv_img = self.bridge.imgmsg_to_cv2(data, "32FC1")
             except CvBridgeError as e:
