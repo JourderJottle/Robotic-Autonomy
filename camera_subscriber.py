@@ -21,7 +21,7 @@ class BallTracker:
 
         # Subscribe to the depth camera feed
         
-        rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.d_and_theta_callback)
+        rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.d_and_theta_callback)
         
         # Subscribe to the color camera feed
         self.ball_2d_data = None
