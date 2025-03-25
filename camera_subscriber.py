@@ -56,8 +56,8 @@ class BallTracker:
             y = self.ball_2d_data[1]
             coords = np.array([[x], [y], [0]])
             new_coords = self.Kd @ (self.cdRotation @ (self.KcI @ coords) + self.cdTranslation)
-            x = int(new_coords[0, 0] + 60)
-            y = int(new_coords[1, 0] + 60)
+            x = int(new_coords[0, 0] + 120)
+            y = int(new_coords[1, 0] + 120)
             rospy.loginfo(f"New Coords: {new_coords}")
             cv.circle(cv_img, (x, y), 5, (0,0,255), -1)
             # Display the resulting frame
