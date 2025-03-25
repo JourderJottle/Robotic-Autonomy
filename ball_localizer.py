@@ -111,7 +111,8 @@ class BallLocalizer :
 
         # Index 0: (+) is away from camera, (-) is towards camera
         # Index 1: (+) is to the right, (-) is to the left
-        self.motion_control = np.array([0, 0])
+        # y=200 seems optimal for midterm presentation
+        self.motion_control = np.array([0, 200])
         
         # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
