@@ -29,7 +29,7 @@ class BallTracker:
         # Subscribe to depth camera info for focal length
         self.focal_length = None
         self.image_width = None
-        rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_callback)
+        #rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_callback)
         rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
         
         
@@ -45,7 +45,7 @@ class BallTracker:
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
-            cv.circle(cv_img, (self.ball_2d_data[1], self.ball_2d_data[0]), 5, (0,0,255), -1)
+            cv.circle(cv_img, (self.ball_2d_data[0], self.ball_2d_data[1]), 5, (0,0,255), -1)
             # Display the resulting frame
             cv.imshow('Depth Video', cv_img)
             #cv.imshow('Mask', mask)
@@ -63,9 +63,7 @@ class BallTracker:
         if self.focal_length == None or self.image_width == None :
             self.focal_length = data.K[0]
             self.image_width = data.K[2]
-        rospy.loginfo(f"Color Camera FOV: {data.K[2]}")
-    def depth_camera_info_callback(self, data) :
-        rospy.loginfo(f"Depth Camera FOV: {data.K[2]}")
+        #rospy.loginfo(f"Color Camera FOV: {data.K[2]}")
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
@@ -120,7 +118,7 @@ class BallTracker:
                 cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
 
                 theta = math.atan((center[0] - self.image_width) / self.focal_length)
-                    
+                
                 self.ball_2d_data = [center[0], center[1], theta]
             else :
                 self.ball_2d_data = None
