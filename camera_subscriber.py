@@ -29,7 +29,7 @@ class BallTracker:
 
         # Camera frame transformations
         self.KcI = np.array([])
-        self.Pd = np.array([])
+        self.Kd = np.array([])
         self.cdRotation = np.array([])
         self.cdTranslation = np.array([])
         
@@ -55,11 +55,9 @@ class BallTracker:
             x = self.ball_2d_data[0]
             y = self.ball_2d_data[1]
             coords = np.array([[x], [y], [0]])
-            depth_coords_3d = self.cdRotation @ (self.KcI @ coords) + self.cdTranslation
-            depth_coords_3d_1 = np.matrix([depth_coords_3d[0, 0], depth_coords_3d[1, 0], depth_coords_3d[2, 0], 1]).T
-            new_coords = self.Pd @ depth_coords_3d_1
-            x = int(new_coords[0, 0] / new_coords[2, 0])
-            y = int(new_coords[1, 0] / new_coords[2, 0])
+            new_coords = self.Kd @ (self.cdRotation @ (self.KcI @ coords) + self.cdTranslation)
+            x = int(new_coords[0, 0])
+            y = int(new_coords[1, 0])
             rospy.loginfo(f"New Coords: {new_coords}")
             cv.circle(cv_img, (x, y), 5, (0,0,255), -1)
             # Display the resulting frame
@@ -82,13 +80,13 @@ class BallTracker:
             self.KcI = np.linalg.pinv(np.matrix([data.K[0:3], data.K[3:6], data.K[6:9]]))
 
     def depth_camera_info_callback(self, data):
-        if not self.Pd.any() :
-            self.Pd = np.matrix([data.P[0:4], data.P[4:8], data.P[8:12]])
+        if not self.Kd.any() :
+            self.Kd = np.matrix([data.K[0:3], data.K[3:6], data.K[6:9]])
 
     def depth_to_color_extrinsics_callback(self, data) :
         if not self.cdRotation.any() or not self.cdTranslation.any() :
-            self.cdRotation = np.matrix([data.rotation[0:3], data.rotation[3:6], data.rotation[6:9]]).T
-            self.cdTranslation = -np.matrix(data.translation).T
+            self.cdRotation = np.matrix([data.rotation[0:3], data.rotation[3:6], data.rotation[6:9]])
+            self.cdTranslation = np.matrix(data.translation).T
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
