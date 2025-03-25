@@ -91,7 +91,9 @@ class BallLocalizer :
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
         
         # checked via tape measurer
-        self.observable_distance = 1400
+        self.observable_distance = 1400 # d reports 1550 but setting
+        # it to that results in OOB still being in the blue region, idk
+        
         # checked via moving ball towards camera to find minimum computed distance
         self.minimum_observable_distance = 155
         # checked via moving ball to edge of camera FOV to check angle
@@ -107,8 +109,12 @@ class BallLocalizer :
         self.observation_queue = deque()
         self.queue_size = 10
 
-        self.motion_control = np.array([0, 0])
+        # vel_x, vel_y
+        self.motion_control = np.array([10, 0])
+        
+        # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
+        
         self.last_dist = Gauss2D(np.array([[0.0], [0.0]]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
