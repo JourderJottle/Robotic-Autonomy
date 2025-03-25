@@ -48,7 +48,7 @@ class BallTracker:
                 
                 
                 depth_at_center = cv_img[y][x]
-                if depth_at_center > 100 and depth_at_center < 1200 :
+                if depth_at_center > 100 :
                     self.past_depth = depth_at_center
                 else:
                     # depth is zero so use the past depth
