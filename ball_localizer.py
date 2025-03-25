@@ -147,6 +147,7 @@ class BallLocalizer :
         dt = time - self.last_time
         self.last_time = time
 
+        # Check more precisely that distance != 0
         if data.data != None and len(data.data) > 0 and data.data[0] != 0:
             init_distance = data.data[0]
             init_theta = data.data[1]
