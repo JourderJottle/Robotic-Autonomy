@@ -149,11 +149,12 @@ class BallLocalizer :
         dt = time - self.last_time
         self.last_time = time
         
-        if data.data[0] == 0:
-            self.observation_queue.clear()
-            self.distance_total = 0
-            self.angle_total = 0
-            
+        
+        if data.data != None:
+            if data.data[0] == 0:
+                self.observation_queue.clear()
+                self.distance_total = 0
+                self.angle_total = 0
 
         # Check more precisely that distance != 0
         if data.data != None and len(data.data) > 0 and data.data[0] != 0:
