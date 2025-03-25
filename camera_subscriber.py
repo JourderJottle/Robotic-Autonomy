@@ -106,7 +106,7 @@ class BallTracker:
                 r = int(r)
                 # minimum circle radius; it tends to see bits of the environment currently.
                 # also do a minimum area of the circle which the contour takes up? brainstorming ways to avoid seeing the box lids
-            if r > 3 and cv.contourArea(largest_contour) / (math.pi * r**2) > 0.3 :
+            if r > 20 and cv.contourArea(largest_contour) / (math.pi * r**2) > 0.3 :
                 cv.circle(frame, center, r, (0, 255, 0), 2)
                 cv.circle(frame, center, 5, (0,0,255), -1)
                 cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
