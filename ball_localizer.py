@@ -109,7 +109,8 @@ class BallLocalizer :
         self.observation_queue = deque()
         self.queue_size = 10
 
-        # vel_x, vel_y
+        # Index 0: (+) is away from camera, (-) is towards camera
+        # Index 1: (+) is to the right, (-) is to the left
         self.motion_control = np.array([1000, 0])
         
         # noise in x ... noise in y
