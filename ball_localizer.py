@@ -93,9 +93,9 @@ class BallLocalizer :
         # checked via tape measurer
         self.observable_distance = 3048
         # checked via moving ball towards camera to find minimum computed distance
-        self.minimum_observable_distance = 200
+        self.minimum_observable_distance = 155
         # checked via moving ball to edge of camera FOV to check angle
-        self.observable_angle = 0.63
+        self.observable_angle = 0.48 # OLD: 0.63
         self.scale = 1 / 5
         self.frame_height = int(self.observable_distance * self.scale)
         self.frame_width = int(self.observable_distance * math.sin(self.observable_angle) * 2 * self.scale)
