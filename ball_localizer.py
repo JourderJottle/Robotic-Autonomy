@@ -91,7 +91,7 @@ class BallLocalizer :
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
         
         # checked via tape measurer
-        self.observable_distance = 3048
+        self.observable_distance = 1560
         # checked via moving ball towards camera to find minimum computed distance
         self.minimum_observable_distance = 155
         # checked via moving ball to edge of camera FOV to check angle
