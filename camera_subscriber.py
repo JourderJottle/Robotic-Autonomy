@@ -29,7 +29,8 @@ class BallTracker:
         # Subscribe to depth camera info for focal length
         self.focal_length = None
         self.image_width = None
-        rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.camera_info_callback)
+        rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_callback)
+        rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
         
         
         rospy.loginfo("Ball Tracker Node Initialized")
@@ -41,7 +42,6 @@ class BallTracker:
         if self.ball_2d_data != None :
             try :
                 cv_img = self.bridge.imgmsg_to_cv2(data, "32FC1")
-                rospy.loginfo(f"Depth Frame Shape: {cv_img.shape}")
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
@@ -53,17 +53,19 @@ class BallTracker:
         else :
             self.ball_data_pub.publish(Float32MultiArray(data=None))
 
-    def camera_info_callback(self, data):
+    def depth_camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :
             self.focal_length = data.K[0]
             self.image_width = data.K[2]
+        rospy.loginfo(f"Depth Camera FOV: {data.K[2]}")
+    def color_camera_info_callback(self, data) :
+        rospy.loginfo(f"Color Camera FOV: {data.K[2]}")
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
             try:
                 # Convert the ROS Image message to OpenCV format
                 frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
-                rospy.loginfo(f"Color Image Frame Shape: {frame.shape}")
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
