@@ -3,7 +3,7 @@
 import rospy
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import Float32MultiArray
-from Extrinsics.msg import Extrinsics
+from realsense2_camera.msg import Extrinsics
 from cv_bridge import CvBridge, CvBridgeError
 import cv2 as cv
 import numpy as np
