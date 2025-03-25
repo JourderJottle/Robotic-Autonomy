@@ -35,10 +35,10 @@ class BallTracker:
         rospy.Subscriber("/camera/extrinsics/depth_to_color", Extrinsics, self.depth_to_color_extrinsics_callback)
         
         # Camera frame transformations
-        self.KcI = []
-        self.Kd = []
-        self.cdRotation = []
-        self.cdTranslation = []
+        self.KcI = np.array()
+        self.Kd = np.array()
+        self.cdRotation = np.array()
+        self.cdTranslation = np.array()
 
         rospy.loginfo("Ball Tracker Node Initialized")
         
