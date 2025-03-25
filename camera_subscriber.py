@@ -75,11 +75,11 @@ class BallTracker:
         if self.focal_length == None or self.image_width == None or self.KcI == None :
             self.focal_length = data.K[0]
             self.image_width = data.K[2]
-            self.KcI = np.linalg.pinv(np.matrix(data.K[0:3], data.K[3:6], data.K[6:9]))
+            self.KcI = np.linalg.pinv(np.matrix([data.K[0:3], data.K[3:6], data.K[6:9]]))
 
     def depth_camera_info_callback(self, data):
         if self.Kd == None :
-            self.Kd = np.matrix(data.K[0:3], data.K[3:6], data.K[6:9])
+            self.Kd = np.matrix([data.K[0:3], data.K[3:6], data.K[6:9]])
 
     def depth_to_color_extrinsics_callback(self, data) :
         if self.cdRotation == None or self.cdTranslation == None :
