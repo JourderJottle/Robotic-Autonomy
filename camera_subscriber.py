@@ -55,7 +55,7 @@ class BallTracker:
             x = self.ball_2d_data[0]
             y = self.ball_2d_data[1]
             coords = np.array([[x], [y], [0]])
-            new_coords = self.Kd @ (self.cdRotation @ (self.KcI @ coords) + self.cdTranslation)
+            new_coords = coords # self.Kd @ (self.cdRotation @ (self.KcI @ coords) + self.cdTranslation)
             x = int(new_coords[0, 0])
             y = int(new_coords[1, 0])
             rospy.loginfo(f"New Coords: {new_coords}")
