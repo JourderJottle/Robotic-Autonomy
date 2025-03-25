@@ -36,7 +36,7 @@ class BallTracker:
         # Subscribe to depth camera info for focal length
         self.focal_length = None
         self.image_width = None
-        rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_callback)
+        rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo, self.depth_camera_info_callback)
         rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
         rospy.Subscriber("/camera/extrinsics/depth_to_color", Extrinsics, self.depth_to_color_extrinsics_callback)
 
