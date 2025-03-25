@@ -55,6 +55,7 @@ class BallTracker:
             x = self.ball_2d_data[0]
             y = self.ball_2d_data[1]
             coords = np.array([[x], [y], [0]])
+            rospy.loginfo(f"Rotation: {self.cdRotation}")
             new_coords = self.Kd @ (self.cdRotation @ (self.KcI @ coords) + self.cdTranslation)
             x = int(new_coords[0, 0])
             y = int(new_coords[1, 0])
@@ -85,8 +86,8 @@ class BallTracker:
 
     def depth_to_color_extrinsics_callback(self, data) :
         if not self.cdRotation.any() or not self.cdTranslation.any() :
-            self.cdRotation = np.matrix([data.rotation[0:3], data.rotation[3:6], data.rotation[6:9]])
-            self.cdTranslation = np.matrix(data.translation).T
+            self.cdRotation = np.matrix([data.rotation[0:3], data.rotation[3:6], data.rotation[6:9]]).T
+            self.cdTranslation = -np.matrix(data.translation).T
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
