@@ -45,7 +45,7 @@ class BallTracker:
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
-            
+            cv.circle(cv_img, (self.ball_2d_data[1], self.ball_2d_data[0]), 5, (0,0,255), -1)
             # Display the resulting frame
             cv.imshow('Depth Video', cv_img)
             #cv.imshow('Mask', mask)
