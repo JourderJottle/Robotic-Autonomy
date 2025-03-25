@@ -150,7 +150,7 @@ class BallLocalizer :
         self.last_time = time
         
         
-        if data.data != None:
+        if data.data == None:
             if data.data[0] == 0:
                 self.observation_queue.clear()
                 self.distance_total = 0
