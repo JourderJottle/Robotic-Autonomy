@@ -3,6 +3,7 @@
 import rospy
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import Float32MultiArray
+from Extrinsics.msg import Extrinsics
 from cv_bridge import CvBridge, CvBridgeError
 import cv2 as cv
 import numpy as np
@@ -29,10 +30,16 @@ class BallTracker:
         # Subscribe to depth camera info for focal length
         self.focal_length = None
         self.image_width = None
-        #rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_callback)
+        rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_callback)
         rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
+        rospy.Subscriber("/camera/extrinsics/depth_to_color", Extrinsics, self.depth_to_color_extrinsics_callback)
         
-        
+        # Camera frame transformations
+        self.KcI = None
+        self.Kd = None
+        self.cdRotation = None
+        self.cdTranslation = None
+
         rospy.loginfo("Ball Tracker Node Initialized")
         
         # spin instead of while true
@@ -45,14 +52,19 @@ class BallTracker:
             except CvBridgeError as e:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
-            cv.circle(cv_img, (self.ball_2d_data[0], self.ball_2d_data[1]), 5, (0,0,255), -1)
+            x = self.ball_2d_data[0]
+            y = self.ball_2d_data[1]
+            coords = np.array([[x], [y]])
+            new_coords = self.Kd @ (self.cdRotation @ (self.KcI @ coords) + self.cdTranslation)
+            rospy.loginfo(f"New Coords: {new_coords}")
+            cv.circle(cv_img, (x, y), 5, (0,0,255), -1)
             # Display the resulting frame
             cv.imshow('Depth Video', cv_img)
             #cv.imshow('Mask', mask)
             if cv.waitKey(10) & 0xFF == ord('b'):
                 rospy.signal_shutdown("Shutting down")
             
-            depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
+            depth_at_center = cv_img[y][x]
 
             self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
             rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
@@ -60,10 +72,19 @@ class BallTracker:
             self.ball_data_pub.publish(Float32MultiArray(data=None))
 
     def color_camera_info_callback(self, data):
-        if self.focal_length == None or self.image_width == None :
+        if self.focal_length == None or self.image_width == None or self.KcI == None :
             self.focal_length = data.K[0]
             self.image_width = data.K[2]
-        #rospy.loginfo(f"Color Camera FOV: {data.K[2]}")
+            self.KcI = np.pinv(np.matrix(data.K[0:3], data.K[3:6], data.K[6:9]))
+
+    def depth_camera_info_callback(self, data):
+        if self.Kd == None :
+            self.Kd = np.matrix(data.K[0:3], data.K[3:6], data.K[6:9])
+
+    def depth_to_color_extrinsics_callback(self, data) :
+        if self.cdRotation == None or self.cdTranslation == None :
+            self.cdRotation = np.pinv(np.matrix([data.rotation[0:3], data.rotation[3:6], data.rotation[6:9]]))
+            self.cdTranslation = -np.array(data.translation)
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
