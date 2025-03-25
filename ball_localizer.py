@@ -110,7 +110,7 @@ class BallLocalizer :
         self.queue_size = 10
 
         # vel_x, vel_y
-        self.motion_control = np.array([10, 0])
+        self.motion_control = np.array([1000, 0])
         
         # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
