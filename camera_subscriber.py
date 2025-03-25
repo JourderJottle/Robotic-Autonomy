@@ -46,6 +46,12 @@ class BallTracker:
                 rospy.logerr(f"CvBridge Error: {e}")
                 return
             
+            # Display the resulting frame
+            cv.imshow('Video', cv_img)
+            #cv.imshow('Mask', mask)
+            if cv.waitKey(10) & 0xFF == ord('b'):
+                rospy.signal_shutdown("Shutting down")
+            
             depth_at_center = cv_img[self.ball_2d_data[1]][self.ball_2d_data[0]]
 
             self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
@@ -53,13 +59,13 @@ class BallTracker:
         else :
             self.ball_data_pub.publish(Float32MultiArray(data=None))
 
-    def depth_camera_info_callback(self, data):
+    def color_camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :
             self.focal_length = data.K[0]
             self.image_width = data.K[2]
-        rospy.loginfo(f"Depth Camera FOV: {data.K[2]}")
-    def color_camera_info_callback(self, data) :
         rospy.loginfo(f"Color Camera FOV: {data.K[2]}")
+    def depth_camera_info_callback(self, data) :
+        rospy.loginfo(f"Depth Camera FOV: {data.K[2]}")
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
