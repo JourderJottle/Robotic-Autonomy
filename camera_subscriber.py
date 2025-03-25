@@ -84,7 +84,7 @@ class BallTracker:
     def depth_to_color_extrinsics_callback(self, data) :
         if not self.cdRotation.any() or not self.cdTranslation.any() :
             self.cdRotation = np.linalg.pinv(np.matrix([data.rotation[0:3], data.rotation[3:6], data.rotation[6:9]]))
-            self.cdTranslation = -np.array(data.translation)
+            self.cdTranslation = -np.matrix(data.translation).T
 
     def color_callback(self, data) :
         if self.image_width != None and self.focal_length != None :
