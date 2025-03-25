@@ -26,6 +26,12 @@ class BallTracker:
         # Subscribe to the color camera feed
         self.ball_2d_data = None
         rospy.Subscriber("/camera/color/image_raw", Image, self.color_callback)
+
+        # Camera frame transformations
+        self.KcI = np.array([])
+        self.Kd = np.array([])
+        self.cdRotation = np.array([])
+        self.cdTranslation = np.array([])
         
         # Subscribe to depth camera info for focal length
         self.focal_length = None
@@ -33,12 +39,6 @@ class BallTracker:
         rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.depth_camera_info_callback)
         rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
         rospy.Subscriber("/camera/extrinsics/depth_to_color", Extrinsics, self.depth_to_color_extrinsics_callback)
-        
-        # Camera frame transformations
-        self.KcI = np.array()
-        self.Kd = np.array()
-        self.cdRotation = np.array()
-        self.cdTranslation = np.array()
 
         rospy.loginfo("Ball Tracker Node Initialized")
         
