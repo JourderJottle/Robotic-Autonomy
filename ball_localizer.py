@@ -122,7 +122,7 @@ class BallLocalizer :
         self.last_time = rospy.get_rostime().secs
 
         self.draw_observation = True
-        self.draw_estimation = True
+        self.draw_estimation = False
 
         rospy.loginfo("Starting ball localizer...")
 
