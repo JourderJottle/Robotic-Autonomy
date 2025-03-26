@@ -121,6 +121,9 @@ class BallLocalizer :
         self.last_dist = Gauss2D(np.array([[0.0], [0.0]]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
+        self.draw_observation = True
+        self.draw_estimation = True
+
         rospy.loginfo("Starting ball localizer...")
 
         rospy.spin()
@@ -181,18 +184,18 @@ class BallLocalizer :
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
 
             dist = gauss2D_from_polar(distance, theta, self.variance())
+            if self.draw_observation :
+                u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
+                a = dist.S[0, 0]
+                b = dist.S[0, 1]
+                c = dist.S[1, 1]
 
-            u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
-            a = dist.S[0, 0]
-            b = dist.S[0, 1]
-            c = dist.S[1, 1]
+                l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+                l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
 
-            l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
-            l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+                angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
 
-            angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
-
-            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
+                cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
 
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
@@ -203,17 +206,18 @@ class BallLocalizer :
         
         # rospy.loginfo(f"u: {self.last_dist.u}")
         # rospy.loginfo(f"S: {self.last_dist.S}")
-        u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
-        a = self.last_dist.S[0, 0]
-        b = self.last_dist.S[0, 1]
-        c = self.last_dist.S[1, 1]
-                
-        l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
-        l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+        if self.draw_estimation :
+            u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
+            a = self.last_dist.S[0, 0]
+            b = self.last_dist.S[0, 1]
+            c = self.last_dist.S[1, 1]
+                    
+            l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+            l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
 
-        angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+            angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
 
-        cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
+            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
 
         cv.imshow('Space', display_frame)
         if cv.waitKey(10) & 0xFF == ord('b'):
