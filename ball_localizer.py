@@ -199,8 +199,8 @@ class BallLocalizer :
 
             self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
         
-        rospy.loginfo(f"u: {self.last_dist.u}")
-        rospy.loginfo(f"S: {self.last_dist.S}")
+        # rospy.loginfo(f"u: {self.last_dist.u}")
+        # rospy.loginfo(f"S: {self.last_dist.S}")
         u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
         a = self.last_dist.S[0, 0]
         b = self.last_dist.S[0, 1]
