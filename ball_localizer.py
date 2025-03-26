@@ -108,6 +108,7 @@ class BallLocalizer :
         self.distance_total = 0
         self.observation_queue = deque()
         self.queue_size = 10
+        self.queue_size_ex0 = 0
 
         # Index 0: (+) is away from camera, (-) is towards camera
         # Index 1: (+) is to the right, (-) is to the left
@@ -125,16 +126,19 @@ class BallLocalizer :
         rospy.spin()
 
     def variance(self) :
-        u_d = self.distance_total / self.queue_size
-        u_theta = self.angle_total / self.queue_size
-        v_d = 0
-        v_theta = 0
-        for o in self.observation_queue :
-            v_d += (o[0] - u_d)**2
-            v_theta += (o[1] - u_theta)**2
-        S_d = math.sqrt(v_d / self.queue_size)
-        S_theta = math.sqrt(v_theta / self.queue_size)
-        return np.matrix([[S_d + u_d * self.distance_noise, 0], [0, S_theta + u_d * self.angle_noise]])
+        if self.queue_size_ex0 > 0 :
+            u_d = self.distance_total / self.queue_size_ex0
+            u_theta = self.angle_total / self.queue_size_ex0
+            v_d = 0
+            v_theta = 0
+            for o in self.observation_queue :
+                v_d += (o[0] - u_d)**2
+                v_theta += (o[1] - u_theta)**2
+            S_d = math.sqrt(v_d / self.queue_size_ex0)
+            S_theta = math.sqrt(v_theta / self.queue_size_ex0)
+            return np.matrix([[S_d + u_d * self.distance_noise, 0], [0, S_theta + u_d * self.angle_noise]])
+        else :
+            return np.matrix([[0, 0], [0, 0]])
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
@@ -151,7 +155,7 @@ class BallLocalizer :
         
         
         # Check more precisely that distance != 0
-        if data.data != None and len(data.data) > 0 and data.data[0] != 0:
+        if data.data != None and len(data.data) > 0 :
             init_distance = data.data[0]
             init_theta = data.data[1]
             distance = init_distance
@@ -159,17 +163,16 @@ class BallLocalizer :
             self.distance_total += init_distance
             self.angle_total += init_theta
             self.observation_queue.append((init_distance, init_theta))
+            if init_distance > 0 : self.queue_size_ex0 += 1
             if len(self.observation_queue) >= self.queue_size :
                 self.distance_total -= self.observation_queue[0][0]
                 self.angle_total -= self.observation_queue[0][1]
-                self.observation_queue.popleft()
-                distance = self.distance_total / self.queue_size
-                theta = self.angle_total / self.queue_size
+                old_observation = self.observation_queue.popleft()
+                if old_observation > 0 : self.queue_size_ex0 -= 1
+            distance = self.distance_total / self.queue_size_ex0
+            theta = self.angle_total / self.queue_size_ex0
         else:
             rospy.loginfo("Ball not detected")
-            self.observation_queue.clear()
-            self.distance_total = 0
-            self.angle_total = 0
 
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
         #rospy.loginfo(f"Predicted State: {predicted_mean}")

@@ -52,7 +52,7 @@ class BallTracker:
             self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
             rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
         else :
-            self.ball_data_pub.publish(Float32MultiArray(data=None))
+            self.ball_data_pub.publish(Float32MultiArray(data=[0.0, 0.0]))
 
     def color_camera_info_callback(self, data):
         if self.focal_length == None or self.image_width == None :
