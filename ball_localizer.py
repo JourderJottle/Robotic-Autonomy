@@ -168,7 +168,7 @@ class BallLocalizer :
                 self.distance_total -= self.observation_queue[0][0]
                 self.angle_total -= self.observation_queue[0][1]
                 old_observation = self.observation_queue.popleft()
-                if old_observation > 0 : self.queue_size_ex0 -= 1
+                if old_observation[0] > 0 : self.queue_size_ex0 -= 1
             distance = self.distance_total / self.queue_size_ex0
             theta = self.angle_total / self.queue_size_ex0
         else:
