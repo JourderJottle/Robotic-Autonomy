@@ -150,13 +150,6 @@ class BallLocalizer :
         self.last_time = time
         
         
-        if data.data == None:
-            if data.data[0] == 0:
-                rospy.loginfo("Ball not detected")
-                self.observation_queue.clear()
-                self.distance_total = 0
-                self.angle_total = 0
-
         # Check more precisely that distance != 0
         if data.data != None and len(data.data) > 0 and data.data[0] != 0:
             init_distance = data.data[0]
@@ -172,6 +165,11 @@ class BallLocalizer :
                 self.observation_queue.popleft()
                 distance = self.distance_total / self.queue_size
                 theta = self.angle_total / self.queue_size
+        else:
+            rospy.loginfo("Ball not detected")
+            self.observation_queue.clear()
+            self.distance_total = 0
+            self.angle_total = 0
 
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
         #rospy.loginfo(f"Predicted State: {predicted_mean}")
