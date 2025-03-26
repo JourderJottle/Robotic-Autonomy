@@ -33,7 +33,7 @@ class BallTracker:
         rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
 
         self.minimum_contour_radius = 5
-        self.minimum_contour_fill = 0.3
+        self.minimum_contour_fill = 0.5
 
         rospy.loginfo("Ball Tracker Node Initialized")
         
