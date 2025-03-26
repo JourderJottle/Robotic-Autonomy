@@ -32,10 +32,21 @@ class BallTracker:
         self.image_width = None
         rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
 
+        self.minimum_contour_radius = 5
+        self.minimum_contour_fill = 0.3
+
         rospy.loginfo("Ball Tracker Node Initialized")
         
         # spin instead of while true
         rospy.spin()
+
+    def contour_picker(self, contour) :
+        (x, y), r = cv.minEnclosingCircle(contour)
+        area = cv.contourArea(contour)
+        if r > self.minimum_contour_radius and area / math.pi * r**2 > self.minimum_contour_fill :
+            return area
+        else :
+            return 0
 
     def d_and_theta_callback(self, data) :
         if self.ball_2d_data != None and len(self.ball_2d_data) > 0 :
@@ -99,14 +110,14 @@ class BallTracker:
             
             if len(contours) != 0:
                 # Find largest because that's probably the ball
-                largest_contour = max(contours, key=cv.contourArea)
+                largest_contour = max(contours, key=self.contour_picker)
                 
                 (x, y), r = cv.minEnclosingCircle(largest_contour)
                 center = (int(x), int(y))
                 r = int(r)
                 # minimum circle radius; it tends to see bits of the environment currently.
                 # also do a minimum area of the circle which the contour takes up? brainstorming ways to avoid seeing the box lids
-            if r > 5 and cv.contourArea(largest_contour) / (math.pi * r**2) > 0.3 :
+            if r > self.minimum_contour_radius and cv.contourArea(largest_contour) / (math.pi * r**2) > self.minimum_contour_fill :
                 cv.circle(frame, center, r, (0, 255, 0), 2)
                 cv.circle(frame, center, 5, (0,0,255), -1)
                 cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
