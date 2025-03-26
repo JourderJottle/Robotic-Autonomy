@@ -152,6 +152,7 @@ class BallLocalizer :
         
         if data.data == None:
             if data.data[0] == 0:
+                rospy.loginfo("Ball not detected")
                 self.observation_queue.clear()
                 self.distance_total = 0
                 self.angle_total = 0
