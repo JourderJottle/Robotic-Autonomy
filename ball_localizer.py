@@ -169,8 +169,9 @@ class BallLocalizer :
                 self.angle_total -= self.observation_queue[0][1]
                 old_observation = self.observation_queue.popleft()
                 if old_observation[0] > 0 : self.queue_size_ex0 -= 1
-            distance = self.distance_total / self.queue_size_ex0
-            theta = self.angle_total / self.queue_size_ex0
+            if self.queue_size_ex0 > 0 :
+                distance = self.distance_total / self.queue_size_ex0
+                theta = self.angle_total / self.queue_size_ex0
         else:
             rospy.loginfo("Ball not detected")
 
