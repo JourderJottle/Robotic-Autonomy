@@ -99,7 +99,7 @@ class BallTracker:
             
             if len(contours) != 0:
                 # Find largest because that's probably the ball
-                largest_contour = max(contours, key=cv.contourArea)
+                largest_contour = max(contours, key=(cv.contourArea if r > 5 and cv.contourArea(largest_contour) / (math.pi * r**2) > 0.3 else 0))
                 
                 (x, y), r = cv.minEnclosingCircle(largest_contour)
                 center = (int(x), int(y))
