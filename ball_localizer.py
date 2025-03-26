@@ -91,7 +91,7 @@ class BallLocalizer :
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
         
         # checked via tape measurer
-        self.observable_distance = 1400 # d reports 1550 but setting
+        self.observable_distance = 2500 # extended via smaller radius minimum
         # it to that results in OOB still being in the blue region, idk
         
         # checked via moving ball towards camera to find minimum computed distance
