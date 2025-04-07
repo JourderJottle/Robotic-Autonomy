@@ -39,7 +39,7 @@ class BallTracker:
         
         # spin instead of while true
         rospy.spin()
-    """
+
     def contour_picker(self, contour) :
         (x, y), r = cv.minEnclosingCircle(contour)
         area = cv.contourArea(contour)
@@ -47,7 +47,7 @@ class BallTracker:
             return area
         else :
             return 0
-    """
+
     def optimized_max(self, contours) :
         largest_contour = None
         max = 0

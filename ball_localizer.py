@@ -3,7 +3,7 @@
 
 import rospy
 from std_msgs.msg import Float32MultiArray
-from visualization_msg.msg import Marker
+from visualization_msgs.msg import Marker
 import numpy as np
 import matplotlib.pyplot as plt
 import math
