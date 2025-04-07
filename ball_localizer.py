@@ -4,6 +4,8 @@
 import rospy
 from std_msgs.msg import Float32MultiArray
 from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Quaternion
+from tf.transformations import quaternion_from_euler
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -235,13 +237,12 @@ class BallLocalizer :
         marker.pose.position.x = self.last_dist.u[0][0]
         marker.pose.position.y = self.last_dist.u[1][0]
         marker.pose.position.z = 0.5
-        # i think orientation rotates the object around the specified axis, so it should rotate around the z axis to affect yaw
-        # of course, i don't know that for certain so definitely could be a point of failure
-        # w is a quaternion thing, i don't know what it does but example code all makes it 1
-        marker.pose.orientation.x = 0
-        marker.pose.orientation.y = 0
-        marker.pose.orientation.z = angle
-        marker.pose.orientation.w = 1
+        # convert from rpy to quaternion
+        orientation = quaternion_from_euler(0, 0, angle / 180 * math.pi)
+        marker.pose.orientation.x = orientation[0]
+        marker.pose.orientation.y = orientation[1]
+        marker.pose.orientation.z = orientation[2]
+        marker.pose.orientation.w = orientation[3]
         # rgba on a 0-1 scale, so i think this should be white with 100% opacity
         marker.color.r = 1
         marker.color.g = 1
