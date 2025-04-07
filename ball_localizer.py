@@ -3,6 +3,7 @@
 
 import rospy
 from std_msgs.msg import Float32MultiArray
+from visualization_msg.msg import Marker
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -89,6 +90,7 @@ class BallLocalizer :
     def __init__(self) :
         rospy.init_node("ball_localizer", anonymous=True)
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
+        self.publisher = rospy.Publisher("/ball_variance_ellipse", Marker, queue_size=10)
         
         # checked via tape measurer
         self.observable_distance = 2400 # extended via smaller radius minimum
@@ -206,18 +208,47 @@ class BallLocalizer :
         
         # rospy.loginfo(f"u: {self.last_dist.u}")
         # rospy.loginfo(f"S: {self.last_dist.S}")
+        u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
+        a = self.last_dist.S[0, 0]
+        b = self.last_dist.S[0, 1]
+        c = self.last_dist.S[1, 1]
+                  
+        l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+        l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+
+        angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+
         if self.draw_estimation :
-            u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
-            a = self.last_dist.S[0, 0]
-            b = self.last_dist.S[0, 1]
-            c = self.last_dist.S[1, 1]
-                    
-            l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
-            l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
-
-            angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
-
             cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
+        
+        marker = Marker()
+        marker.header.frame_id = "/map" # don't know why, all the example code i found does this
+        marker.header.stamp = rospy.Time.now()
+        # type for cylinder since we don't have z variance
+        marker.type = 3
+        # scale is allegedly in meters so z is 1 to make it tall enough to see and the / 1000 is because these are in millimeters
+        # we should play with these if that seems wrong in practice
+        marker.scale.x = self.last_dist.S[0, 0] / 1000
+        marker.scale.y = self.last_dist.S[1, 1] / 1000
+        marker.scale.z = 1
+        # this should be clear, 0.5 is because i think scale is on both sides of the center
+        marker.pose.x = self.last_dist.u[0][0]
+        marker.pose.y = self.last_dist.u[1][0]
+        marker.pose.z = 0.5
+        # i think orientation rotates the object around the specified axis, so it should rotate around the z axis to affect yaw
+        # of course, i don't know that for certain so definitely could be a point of failure
+        # w is a quaternion thing, i don't know what it does but example code all makes it 1
+        marker.pose.orientation.x = 0
+        marker.pose.orientation.y = 0
+        marker.pose.orientation.z = angle
+        marker.pose.orientation.w = 1
+        # rgba on a 0-1 scale, so i think this should be white with 100% opacity
+        marker.color.r = 1
+        marker.color.g = 1
+        marker.color.b = 1
+        marker.color.a = 1
+
+        self.publisher.publish(marker)
 
         cv.imshow('Space', display_frame)
         if cv.waitKey(10) & 0xFF == ord('b'):

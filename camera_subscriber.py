@@ -39,7 +39,7 @@ class BallTracker:
         
         # spin instead of while true
         rospy.spin()
-
+    """
     def contour_picker(self, contour) :
         (x, y), r = cv.minEnclosingCircle(contour)
         area = cv.contourArea(contour)
@@ -47,6 +47,21 @@ class BallTracker:
             return area
         else :
             return 0
+    """
+    def optimized_max(self, contours) :
+        largest_contour = None
+        max = 0
+        x = 0
+        y = 0
+        r = 0
+        for c in contours :
+            area = cv.contourArea(c)
+            if area > max :
+                (x, y), r = cv.minEnclosingCircle(c)
+                if r > self.minimum_contour_radius and area / math.pi * r**2 > self.minimum_contour_fill :
+                    largest_contour = c
+                    max = area
+        return largest_contour, x, y, r
 
     def d_and_theta_callback(self, data) :
         if self.ball_2d_data != None and len(self.ball_2d_data) > 0 :
@@ -110,9 +125,10 @@ class BallTracker:
             
             if len(contours) != 0:
                 # Find largest because that's probably the ball
-                largest_contour = max(contours, key=self.contour_picker)
+                #largest_contour = max(contours, key=self.contour_picker)
+                largest_contour, x, y, r = self.optimized_max(contours)
                 
-                (x, y), r = cv.minEnclosingCircle(largest_contour)
+                #(x, y), r = cv.minEnclosingCircle(largest_contour)
                 center = (int(x), int(y))
                 r = int(r)
                 # minimum circle radius; it tends to see bits of the environment currently.
