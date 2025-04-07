@@ -117,7 +117,7 @@ class BallLocalizer :
         # Index 0: (+) is away from camera, (-) is towards camera
         # Index 1: (+) is to the right, (-) is to the left
         # y=200 seems optimal for midterm presentation
-        self.motion_control = np.array([0, 200])
+        self.motion_control = np.array([0, 0])
         
         # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
@@ -234,8 +234,8 @@ class BallLocalizer :
         marker.scale.y = self.last_dist.S[1, 1] / 1000
         marker.scale.z = 1
         # this should be clear, 0.5 is because i think scale is on both sides of the center
-        marker.pose.position.x = self.last_dist.u[0][0]
-        marker.pose.position.y = self.last_dist.u[1][0]
+        marker.pose.position.x = self.last_dist.u[0][0] / 1000
+        marker.pose.position.y = self.last_dist.u[1][0] / 1000
         marker.pose.position.z = 0.5
         # convert from rpy to quaternion
         orientation = quaternion_from_euler(0, 0, angle / 180 * math.pi)
