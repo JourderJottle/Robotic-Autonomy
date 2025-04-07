@@ -121,7 +121,7 @@ class BallLocalizer :
         
         # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
-        
+
         self.last_dist = Gauss2D(np.array([[0.0], [0.0]]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
@@ -183,7 +183,6 @@ class BallLocalizer :
             rospy.loginfo("Ball not detected")
 
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
-        #rospy.loginfo(f"Predicted State: {predicted_mean}")
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
 
@@ -235,7 +234,7 @@ class BallLocalizer :
         marker.scale.z = 1
         # this should be clear, 0.5 is because i think scale is on both sides of the center
         marker.pose.position.x = self.last_dist.u[0][0] / 1000
-        marker.pose.position.y = self.last_dist.u[1][0] / 1000
+        marker.pose.position.y = -self.last_dist.u[1][0] / 1000
         marker.pose.position.z = 0.5
         # convert from rpy to quaternion
         orientation = quaternion_from_euler(0, 0, angle / 180 * math.pi)
