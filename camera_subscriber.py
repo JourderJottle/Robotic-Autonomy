@@ -21,16 +21,16 @@ class BallTracker:
 
         # Subscribe to the depth camera feed
         
-        rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.d_and_theta_callback)
+        rospy.Subscriber("/d400/aligned_depth_to_color/image_raw", Image, self.d_and_theta_callback)
         
         # Subscribe to the color camera feed
         self.ball_2d_data = None
-        rospy.Subscriber("/camera/color/image_raw", Image, self.color_callback)
+        rospy.Subscriber("/d400/color/image_raw", Image, self.color_callback)
         
         # Subscribe to depth camera info for focal length
         self.focal_length = None
         self.image_width = None
-        rospy.Subscriber("/camera/color/camera_info", CameraInfo, self.color_camera_info_callback)
+        rospy.Subscriber("/d400/color/camera_info", CameraInfo, self.color_camera_info_callback)
 
         self.minimum_contour_radius = 5
         self.minimum_contour_fill = 0.5
@@ -145,12 +145,12 @@ class BallTracker:
                 self.ball_2d_data = None
             
             
-        # Display the resulting frame
-        cv.imshow('Video', frame)
-        #cv.imshow('Mask', mask)
-        if cv.waitKey(10) & 0xFF == ord('b'):
-            rospy.loginfo("Ball Tracker Node terminated.")
-            rospy.signal_shutdown("Shutting down")
+            # Display the resulting frame
+            cv.imshow('Video', frame)
+            #cv.imshow('Mask', mask)
+            if cv.waitKey(10) & 0xFF == ord('b'):
+                rospy.loginfo("Ball Tracker Node terminated.")
+                rospy.signal_shutdown("Shutting down")
         
 
 

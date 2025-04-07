@@ -222,7 +222,7 @@ class BallLocalizer :
             cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
         
         marker = Marker()
-        marker.header.frame_id = "/map" # don't know why, all the example code i found does this
+        marker.header.frame_id = "map" # don't know why, all the example code i found does this
         marker.header.stamp = rospy.Time.now()
         # type for cylinder since we don't have z variance
         marker.type = 3
