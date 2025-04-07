@@ -232,9 +232,9 @@ class BallLocalizer :
         marker.scale.y = self.last_dist.S[1, 1] / 1000
         marker.scale.z = 1
         # this should be clear, 0.5 is because i think scale is on both sides of the center
-        marker.pose.x = self.last_dist.u[0][0]
-        marker.pose.y = self.last_dist.u[1][0]
-        marker.pose.z = 0.5
+        marker.pose.position.x = self.last_dist.u[0][0]
+        marker.pose.position.y = self.last_dist.u[1][0]
+        marker.pose.position.z = 0.5
         # i think orientation rotates the object around the specified axis, so it should rotate around the z axis to affect yaw
         # of course, i don't know that for certain so definitely could be a point of failure
         # w is a quaternion thing, i don't know what it does but example code all makes it 1
