@@ -237,7 +237,7 @@ class BallLocalizer :
         marker.pose.position.y = -self.last_dist.u[1][0] / 1000
         marker.pose.position.z = 0.5
         # convert from rpy to quaternion
-        orientation = quaternion_from_euler(0, 0, angle / 180 * math.pi)
+        orientation = quaternion_from_euler(0, 0, -angle)
         marker.pose.orientation.x = orientation[0]
         marker.pose.orientation.y = orientation[1]
         marker.pose.orientation.z = orientation[2]
