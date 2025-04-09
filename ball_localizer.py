@@ -251,8 +251,8 @@ class BallLocalizer :
         marker.pose.orientation.w = orientation[3]
         # rgba on a 0-1 scale, so i think this should be white with 100% opacity
         marker.color.r = 1
-        marker.color.g = 1
-        marker.color.b = 1
+        marker.color.g = 0
+        marker.color.b = 0
         marker.color.a = 1
 
         self.publisher.publish(marker)
