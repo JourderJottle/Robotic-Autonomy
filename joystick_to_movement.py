@@ -8,7 +8,7 @@ class PublishMovementFromController():
 
     def __init__(self): 
         # Set Speed Scaler:
-        self.safety_scale = 0.4
+        self.safety_scale = 0.2
         
         # Initialize Button Definitions; MODIFY FOR YOUR CONTROLLER.
         self.linear_axis = 1
@@ -17,10 +17,16 @@ class PublishMovementFromController():
         self.vertical_axis = 7
         self.safety_button = 5
     
-
+        # This topic subscribed to by the robot's movement node.
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 
+        # Take in joystick input and eventually publish to cmd_vel topic
         rospy.Subscriber('/joy', Joy, self.callback)
+        
+        rospy.loginfo('PublishMovementFromController Node Initialized\n',
+                      'Hold right bumper to allow for input\n',
+                      'Left stick controls forward/backward movement\n',
+                      'Right stick controls left/right rotation\n')
 
     def callback(self, data):
 
