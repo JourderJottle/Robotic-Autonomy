@@ -1,0 +1,4 @@
+<launch>
+  <node name="localizer_node" pkg="ros_opencv" type="ball_localizer.py" output="screen"/>
+  <node name="camera_node" pkg="ros_opencv" type="camera_subscriber.py" output="screen"/>
+</launch>
