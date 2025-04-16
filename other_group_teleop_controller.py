@@ -80,7 +80,8 @@ class controller():
         else:
             twist.linear.x = 0
             twist.angular.z = 0
-
+        rospy.loginfo("Linear: %s, Angular: %s, Servo X: %s, Servo Y: %s",
+                      twist.linear.x, twist.angular.z, servo.data[0], servo.data[1])
         # Publish New Data.
         self.base_pub.publish(twist)
         self.camera_pub.publish(servo)
