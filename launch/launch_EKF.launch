@@ -1,6 +1,6 @@
 <launch>
-  <node name="localizer_node" pkg="ros_opencv" type="ball_localizer.py" output="screen"/>
-  <node name="camera_node" pkg="ros_opencv" type="camera_subscriber.py" output="screen"/>
   <include file="/opt/ros/noetic/share/realsense2_camera/launch/rs_d400_and_t265.launch">
   </include>
+  <node name="camera_node" pkg="ros_opencv" type="camera_subscriber.py" output="screen"/>
+  <node name="localizer_node" pkg="ros_opencv" type="ball_localizer.py" output="screen"/>
 </launch>
