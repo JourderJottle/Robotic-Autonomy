@@ -23,9 +23,9 @@ class PublishMovementFromController():
         # Take in joystick input and eventually publish to cmd_vel topic
         rospy.Subscriber('/joy', Joy, self.callback)
         
-        rospy.loginfo('PublishMovementFromController Node Initialized\n',
-                      'Hold right bumper to allow for input\n',
-                      'Left stick controls forward/backward movement\n',
+        rospy.loginfo('PublishMovementFromController Node Initialized\n' +
+                      'Hold right bumper to allow for input\n' +
+                      'Left stick controls forward/backward movement\n' +
                       'Right stick controls left/right rotation\n')
 
     def callback(self, data):
