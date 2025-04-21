@@ -55,7 +55,7 @@ def ellipse_from_gauss2d(dist) :
     return dist.u, l1, l2, angle
 
 def motion_model(u) :
-    return np.ndarray([u[0, 0] * math.cos(u[0, 1]), u[0, 0] * math.sin(u[0, 1])])
+    return np.ndarray([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])])
 
 def sensor_model(x) :
     return x
