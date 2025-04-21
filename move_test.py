@@ -11,5 +11,5 @@ if __name__ == '__main__':
     
     
     controller.send_movement(0.0, 0.0)
-    rospy.sleep(0.25)
+    rospy.sleep(0.2)
 
