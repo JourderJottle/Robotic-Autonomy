@@ -42,8 +42,20 @@ def local_target_pose_to_global(target_pose: np.ndarray, sensor_translation: np.
     R_G = rotational_matrix(robot_theta)
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
 
+def ellipse_from_gauss2d(dist) :
+    a = dist.S[0, 0]
+    b = dist.S[0, 1]
+    c = dist.S[1, 1]
+
+    l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
+    l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
+
+    angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+
+    return dist.u, l1, l2, angle
+
 def motion_model(u) :
-    return u
+    return np.ndarray([u[0, 0] * math.cos(u[0, 1]), u[0, 0] * math.sin(u[0, 1])])
 
 def sensor_model(x) :
     return x
@@ -108,12 +120,6 @@ class BallLocalizer :
         self.distance_noise = 0.05
         self.angle_noise = 0.01
 
-        self.angle_total = 0
-        self.distance_total = 0
-        self.observation_queue = deque()
-        self.queue_size = 10
-        self.queue_size_ex0 = 0
-
         # Index 0: (+) is away from camera, (-) is towards camera
         # Index 1: (+) is to the right, (-) is to the left
         # y=200 seems optimal for midterm presentation
@@ -122,6 +128,7 @@ class BallLocalizer :
         # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
         
+        # TODO: pick init location
         self.last_dist = Gauss2D(np.array([[0.0], [0.0]]), np.matrix([[0.0, 0.0], [0.0, 0.0]]))
         self.last_time = rospy.get_rostime().secs
 
@@ -131,75 +138,29 @@ class BallLocalizer :
         rospy.loginfo("Starting ball localizer...")
 
         rospy.spin()
-
-    def variance(self) :
-        if self.queue_size_ex0 > 0 :
-            u_d = self.distance_total / self.queue_size_ex0
-            u_theta = self.angle_total / self.queue_size_ex0
-            v_d = 0
-            v_theta = 0
-            for o in self.observation_queue :
-                v_d += (o[0] - u_d)**2
-                v_theta += (o[1] - u_theta)**2
-            S_d = math.sqrt(v_d / self.queue_size_ex0)
-            S_theta = math.sqrt(v_theta / self.queue_size_ex0)
-            return np.matrix([[S_d + u_d * self.distance_noise, 0], [0, S_theta + u_d * self.angle_noise]])
-        else :
-            return np.matrix([[0, 0], [0, 0]])
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
-        display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
-        cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
+        if self.draw_observation or self.draw_estimation :
+            display_frame = np.zeros(shape=(self.frame_height, self.frame_width, 3), dtype=np.uint8)
+            cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.observable_distance * self.scale), int(self.observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (150, 0, 30), -1)
+            cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
 
-        distance = 0
-        theta = 0
+        distance = data.data[0]
+        theta = data.data[1]
 
         time = rospy.get_rostime().to_sec()
         dt = time - self.last_time
         self.last_time = time
-        
-        
-        # Check more precisely that distance != 0
-        if data.data != None and len(data.data) > 0 :
-            init_distance = data.data[0]
-            init_theta = data.data[1]
-            distance = init_distance
-            theta = init_theta
-            self.distance_total += init_distance
-            self.angle_total += init_theta
-            self.observation_queue.append((init_distance, init_theta))
-            if init_distance > 0 : self.queue_size_ex0 += 1
-            if len(self.observation_queue) >= self.queue_size :
-                self.distance_total -= self.observation_queue[0][0]
-                self.angle_total -= self.observation_queue[0][1]
-                old_observation = self.observation_queue.popleft()
-                if old_observation[0] > 0 : self.queue_size_ex0 -= 1
-            if self.queue_size_ex0 > 5 :
-                distance = self.distance_total / self.queue_size_ex0
-                theta = self.angle_total / self.queue_size_ex0
-        else:
-            rospy.loginfo("Ball not detected")
 
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
-        #rospy.loginfo(f"Predicted State: {predicted_mean}")
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
-
-            dist = gauss2D_from_polar(distance, theta, self.variance())
+            # TODO: motion noise
+            dist = gauss2D_from_polar(distance, theta, np.matrix([[0, 0], [0, 0]]))
             if self.draw_observation :
-                u = (int(dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(dist.u[0][0] * self.scale))
-                a = dist.S[0, 0]
-                b = dist.S[0, 1]
-                c = dist.S[1, 1]
-
-                l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
-                l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
-
-                angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
-
-                cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
+                u, l1, l2, angle = ellipse_from_gauss2d(dist)
+                cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
 
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
@@ -210,18 +171,10 @@ class BallLocalizer :
         
         # rospy.loginfo(f"u: {self.last_dist.u}")
         # rospy.loginfo(f"S: {self.last_dist.S}")
-        u = (int(self.last_dist.u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(self.last_dist.u[0][0] * self.scale))
-        a = self.last_dist.S[0, 0]
-        b = self.last_dist.S[0, 1]
-        c = self.last_dist.S[1, 1]
-                  
-        l1 = (a + c) / 2 + math.sqrt(((a - c) / 2)**2 + b**2)
-        l2 = (a + c) / 2 - math.sqrt(((a - c) / 2)**2 + b**2)
-
-        angle = 0 if b == 0 and a >= c else math.pi / 2 if b == 0 and a < c else math.atan2(l1 - a, b)
+        u, l1, l2, angle = ellipse_from_gauss2d(self.last_dist)
 
         if self.draw_estimation :
-            cv.ellipse(display_frame, u, (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
+            cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
         
         marker = Marker()
         marker.header.frame_id = "map" # don't know why, all the example code i found does this
@@ -251,7 +204,8 @@ class BallLocalizer :
 
         self.publisher.publish(marker)
 
-        cv.imshow('Space', display_frame)
+        if self.draw_estimation or self.draw_estimation :
+            cv.imshow('Space', display_frame)
         if cv.waitKey(10) & 0xFF == ord('b'):
             rospy.signal_shutdown("Shutting down")
 
