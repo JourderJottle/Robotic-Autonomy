@@ -37,7 +37,7 @@ def gauss2D_from_polar(u_d: float, u_theta: float, S: np.matrix) -> Gauss2D :
     S_v = R @ S @ R.T
     return Gauss2D(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
 
-def local_target_pose_to_global(target_pose: np.ndarray, sensor_translation: np.ndarray, sensor_theta: float, robot_pose: np.ndarray, robot_theta: float) -> np.ndarray :
+def local_target_pose_to_global(target_pose: np.array, sensor_translation: np.array, sensor_theta: float, robot_pose: np.array, robot_theta: float) -> np.array :
     R_R = rotational_matrix(sensor_theta)
     R_G = rotational_matrix(robot_theta)
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
@@ -55,7 +55,7 @@ def ellipse_from_gauss2d(dist) :
     return dist.u, l1, l2, angle
 
 def motion_model(u) :
-    return np.ndarray([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])])
+    return np.array([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])], dtype=np.float64)
 
 def sensor_model(x) :
     return x
@@ -89,7 +89,6 @@ def ekf_predict(previous_state, previous_covariance, input, motion_model, motion
     predicted_covariance = a2 + motion_noise
     # Returns (mean, covariance)
     return (predicted_mean, predicted_covariance)
-
 
 def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
     C = derive_gradient(sensor_model, np.array(predicted_state.T)[0], 0.1)
