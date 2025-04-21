@@ -1,1 +1,2 @@
-roslaunch rtabmap_ros rtabmap.launch rtabmap_args:="--delete_db_on_start" rgb_topic:=/camera/color/image_raw depth_topic:=/camera/aligned_depth_to_color/image_raw camera_info_topic:=/camera/color/camera_info
+roslaunch rtabmap_ros rtabmap.launch rtabmap_args:="--delete_db_on_start" rgb_topic:=/d400/color/image_raw depth_topic:=/d400/aligned_depth_to_color/image_raw camera_info_topic:=/d400/color/camera_info frame_id:=d400_link
+
