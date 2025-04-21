@@ -173,7 +173,7 @@ class BallLocalizer :
         u, l1, l2, angle = ellipse_from_gauss2d(self.last_dist)
 
         if self.draw_estimation :
-            cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
+            cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
         
         marker = Marker()
         marker.header.frame_id = "map" # don't know why, all the example code i found does this
