@@ -8,7 +8,6 @@ class Controller:
     '''Sends messages to cmd_vel through functions'''
 
     def __init__(self, safety_scale=0.5): 
-        rospy.init_node("Controller", anonymous=True)  
 
         # Set Speed Scaler:
         self.safety_scale = safety_scale
