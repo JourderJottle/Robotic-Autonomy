@@ -6,11 +6,18 @@ from std_msgs.msg import Float32MultiArray
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion
 from tf.transformations import quaternion_from_euler
+import tf2_ros
+import tf2_geometry_msgs
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import cv2 as cv
 from collections import deque
+
+
+
+
+
 
 class Gauss2D:
 
@@ -176,7 +183,7 @@ class BallLocalizer :
             cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
         
         marker = Marker()
-        marker.header.frame_id = "map" # don't know why, all the example code i found does this
+        marker.header.frame_id = "d400_aligned_depth_to_color_frame" # don't know why, all the example code i found does this
         marker.header.stamp = rospy.Time.now()
         # type for cylinder since we don't have z variance
         marker.type = 3
@@ -187,18 +194,18 @@ class BallLocalizer :
         marker.scale.z = 1
         # this should be clear, 0.5 is because i think scale is on both sides of the center
         marker.pose.position.x = self.last_dist.u[0][0] / 1000
-        marker.pose.position.y = self.last_dist.u[1][0] / 1000
+        marker.pose.position.y = -self.last_dist.u[1][0] / 1000
         marker.pose.position.z = 0.5
         # convert from rpy to quaternion
-        orientation = quaternion_from_euler(0, 0, angle / 180 * math.pi)
+        orientation = quaternion_from_euler(0, 0, -angle)
         marker.pose.orientation.x = orientation[0]
         marker.pose.orientation.y = orientation[1]
         marker.pose.orientation.z = orientation[2]
         marker.pose.orientation.w = orientation[3]
         # rgba on a 0-1 scale, so i think this should be white with 100% opacity
         marker.color.r = 1
-        marker.color.g = 1
-        marker.color.b = 1
+        marker.color.g = 0
+        marker.color.b = 0
         marker.color.a = 1
 
         self.publisher.publish(marker)
