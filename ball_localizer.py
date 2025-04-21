@@ -156,8 +156,8 @@ class BallLocalizer :
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
-            # TODO: motion noise
-            dist = gauss2D_from_polar(distance, theta, np.matrix([[0, 0], [0, 0]]))
+            # TODO: sensor noise
+            dist = gauss2D_from_polar(distance, theta, np.matrix([[200, 0], [0, 0.1]]))
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2d(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
