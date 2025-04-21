@@ -11,9 +11,12 @@
     <arg name="camera_info_topic" default="/d400/color/camera_info"/>
     <arg name="frame_id" default="d400_link"/>
   </include>
-
+  
   <node name="camera_node" pkg="ros_opencv" type="camera_subscriber.py" output="screen"/>
   <node name="localizer_node" pkg="ros_opencv" type="ball_localizer.py" output="screen"/>
+  <node name="arduino_comm" pkg="rossserial_python" type="serial_node.py" output="screen">
+    <arg name="port" default="/dev/ttyACM0"/>
+  </node>
   <node pkg="tf" type="static_transform_publisher" name="t265_odom_to_odom" args="0 0 0 0 0 0 /t265_odom_frame /odom 100"/>
   <node pkg="tf" type="static_transform_publisher" name="robot_base_tf" args="0 0 0 0 0 0 /base_link /d400_link 100"/>
 
