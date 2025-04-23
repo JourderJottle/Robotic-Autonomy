@@ -7,3 +7,11 @@ global_costmap:
   transform_tolerance: 0.5
 
   static_map: false
+  plugins:
+  - {name: static_layer, type: "costmap_2d::StaticLayer"}
+  - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
+  static_layer:
+    map_topic: /map
+    subscribe_to_updates: true
+  inflation_layer:
+    inflation_radius: 0.8

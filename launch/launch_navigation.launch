@@ -1,10 +1,9 @@
 <launch>
-  <include file="/opt/ros/noetic/share/realsense2_camera/launch/rs_d400_and_t265.launch">
-  </include>
+
 
   <remap from="grid_map" to="/map"/>
-
-  <include file="$(find rtabmap_ros)/launch/rtabmap.launch">
+  <include file="$(find realsense2_camera)/launch/rs_d400_and_t265.launch"/>
+  <include file="$(find rtabmap_launch)/launch/rtabmap.launch">
     <arg name="rtabmap_args" default="--delete_db_on_start"/>
     <arg name="rgb_topic" default="/d400/color/image_raw"/>
     <arg name="depth_topic" default="/d400/aligned_depth_to_color/image_raw"/>
@@ -21,7 +20,6 @@
 
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
     <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
-    <rosparam file="$(find ros_opencv)/src/param/costmap_common_params.yaml" command="load"/>
     <rosparam file="$(find ros_opencv)/src/param/costmap_common_params.yaml" command="load"/>
     <rosparam file="$(find ros_opencv)/src/param/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find ros_opencv)/src/param/global_costmap_params.yaml" command="load" />
