@@ -79,7 +79,7 @@ def ekf_predict(previous_state, previous_covariance, input, motion_model, motion
     return (previous_state + dt * np.matrix(motion_model(input)).T, A @ previous_covariance @ A.T + motion_noise)
 
 def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
-    C = derive_gradient(sensor_model, np.array(predicted_state.T)[0], 0.1)
+    C = derive_gradient(sensor_model, predicted_state.T, 0.1)
     K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
     
     # Returns (mean, covariance)
