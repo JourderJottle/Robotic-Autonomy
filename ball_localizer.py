@@ -59,12 +59,6 @@ def ellipse_from_gauss2D(dist) :
 
     return dist.u, l1, l2, angle
 
-def motion_model(u) :
-    return np.array([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])], dtype=np.float64)
-
-def sensor_model(x) :
-    return x
-
 def derive_gradient(func, location, dl) :
     dimensions = len(location)
     j1 = []
@@ -95,7 +89,7 @@ class BallLocalizer :
     def __init__(self) :
         rospy.init_node("ball_localizer", anonymous=True)
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
-        rospy.Subscriber("", Odometry, self.odom_callback) # TODO: fill in odometry topic
+        rospy.Subscriber("/t265/odom", Odometry, self.odom_callback) # TODO: this topic might be wrong i dont remember
         self.marker_publisher = rospy.Publisher("/ball_variance_ellipse", Marker, queue_size=10)
         self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovariance, queue_size=10)
         
@@ -137,6 +131,12 @@ class BallLocalizer :
 
         rospy.spin()
 
+    def motion_model(self, u) :
+        return np.array([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])], dtype=np.float64)
+
+    def sensor_model(self, x) :
+        return local_target_pose_to_global(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
+
     # TODO: sensor noise for angle
     def sensor_noise(self, d) :
         return np.matrix([[0.3 * 1.81 ** d, 0], [0, 0.1]])
@@ -155,16 +155,15 @@ class BallLocalizer :
         dt = time - self.last_time
         self.last_time = time
 
-        (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
+        (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, self.motion_model, self.motion_noise, dt)
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
             dist = gauss2D_from_polar(distance, theta, self.sensor_noise(distance))
-            dist.u = local_target_pose_to_global(dist.u, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
 
-            (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, sensor_model, dist.S)
+            (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, self.sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
 
         else :
@@ -179,7 +178,7 @@ class BallLocalizer :
             cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
         
         marker = Marker()
-        marker.header.frame_id = "d400_aligned_depth_to_color_frame" # don't know why, all the example code i found does this
+        marker.header.frame_id = "d400_aligned_depth_to_color_frame"
         marker.header.stamp = rospy.Time.now()
         # type for cylinder since we don't have z variance
         marker.type = 3
@@ -208,7 +207,7 @@ class BallLocalizer :
 
         pose_with_covariance = PoseWithCovariance()
 
-        pose_with_covariance.header.frame_id = "map" # don't know why, all the example code i found does this
+        pose_with_covariance.header.frame_id = "map"
         pose_with_covariance.header.stamp = rospy.Time.now()
 
         pose_with_covariance.pose.position.x = self.last_dist.u[0][0] / 1000
