@@ -8,6 +8,7 @@ from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import PoseWithCovariance
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
+from nav_msgs import Odometry
 import tf2_ros
 import tf2_geometry_msgs
 import numpy as np
@@ -15,11 +16,6 @@ import matplotlib.pyplot as plt
 import math
 import cv2 as cv
 from collections import deque
-
-
-
-
-
 
 class Gauss2D:
 
@@ -99,6 +95,7 @@ class BallLocalizer :
     def __init__(self) :
         rospy.init_node("ball_localizer", anonymous=True)
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
+        rospy.Subscriber("", Odometry, self.odom_callback) # TODO: fill in odometry topic
         self.marker_publisher = rospy.Publisher("/ball_variance_ellipse", Marker, queue_size=10)
         self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovariance, queue_size=10)
         
@@ -124,11 +121,14 @@ class BallLocalizer :
         # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
         
-        # TODO: pick init location covariance
         self.last_dist = gauss2D_from_polar(8000, 0, np.matrix([[0, 0], [0, 0]]))
-        self.last_orientation = 0
         self.last_time = rospy.get_rostime().secs
-        self.robot_pose = np.array([0, 0, 0])
+        self.robot_pose = np.array([0, 0], dtype=np.float64).T
+        self.robot_orientation = 0
+
+        # TODO: measure sensor translation
+        self.sensor_translation = np.array([0, 0], dtype=np.float64).T
+        self.sensor_theta = 0
 
         self.draw_observation = False
         self.draw_estimation = True
@@ -137,6 +137,7 @@ class BallLocalizer :
 
         rospy.spin()
 
+    # TODO: sensor noise for angle
     def sensor_noise(self, d) :
         return np.matrix([[0.3 * 1.81 ** d, 0], [0, 0.1]])
         
@@ -157,14 +158,13 @@ class BallLocalizer :
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, motion_model, self.motion_noise, dt)
 
         if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
-            # TODO: sensor noise
             dist = gauss2D_from_polar(distance, theta, self.sensor_noise(distance))
+            dist.u = local_target_pose_to_global(dist.u, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
 
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, sensor_model, dist.S)
-            #self.last_orientation += math.asin((corrected_mean - self.last_dist.u)[1, 0] / )
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
 
         else :
@@ -232,7 +232,8 @@ class BallLocalizer :
     def odom_callback(self, odom) :
         orientation = odom.pose.pose.orientation
         (roll, pitch, yaw) = euler_from_quaternion(orientation.x, orientation.y, orientation.z, orientation.w)
-        self.robot_pose = np.array([odom.pose.pose.position.z, odom.pose.pose.position.x, yaw], dtype=np.float64)
+        self.robot_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y], dtype=np.float64)
+        self.robot_orientation = yaw
 
 if __name__ == '__main__':
     try:
