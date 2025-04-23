@@ -120,8 +120,8 @@ class BallLocalizer :
         self.robot_pose = np.array([0, 0], dtype=np.float64).T
         self.robot_orientation = 0
 
-        # TODO: measure sensor translation
-        self.sensor_translation = np.array([0, 0], dtype=np.float64).T
+        # millimeters
+        self.sensor_translation = np.array([-228.6, 0], dtype=np.float64).T
         self.sensor_theta = 0
 
         self.draw_observation = False
