@@ -32,7 +32,7 @@ class Gauss2D:
 
     def probability(self, x: np.matrix) -> float :
         ud = x - self.u
-        return math.exp(-ud.T @ self.invS @ ud / 2) / math.sqrt(math.pow(2*math.pi, len(self.u)) * self.detS)
+        return math.exp(-ud.T @ self.invS @ ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
 
 def rotational_matrix(theta: float) -> np.matrix :
     return np.array([[math.cos(theta), -math.sin(theta)],[math.sin(theta), math.cos(theta)]], dtype=np.float64)
