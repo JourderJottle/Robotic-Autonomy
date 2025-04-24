@@ -8,7 +8,7 @@ from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import PoseWithCovariance
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
-from nav_msgs import Odometry
+from nav_msgs.msg import Odometry
 import tf2_ros
 import tf2_geometry_msgs
 import numpy as np
@@ -40,11 +40,14 @@ def rotational_matrix(theta: float) -> np.matrix :
 def gauss2D_from_polar(u_d: float, u_theta: float, S: np.matrix) -> Gauss2D :
     R = rotational_matrix(u_theta)
     S_v = R @ S @ R.T
+    #rospy.loginfo(f"{S_v}")
     return Gauss2D(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
 
 def local_target_pose_to_global(target_pose: np.array, sensor_translation: np.array, sensor_theta: float, robot_pose: np.array, robot_theta: float) -> np.array :
     R_R = rotational_matrix(sensor_theta)
     R_G = rotational_matrix(robot_theta)
+    rospy.loginfo(f"{R_R.shape} {target_pose.shape}")
+    #rospy.loginfo(f"{R_R} {target_pose}")
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
 
 def ellipse_from_gauss2D(dist) :
@@ -60,12 +63,14 @@ def ellipse_from_gauss2D(dist) :
     return dist.u, l1, l2, angle
 
 def derive_gradient(func, location, dl) :
+    rospy.loginfo(f"{location}")
     dimensions = len(location)
     j1 = []
     j2 = []
     for i in range(dimensions) :
         dx = np.zeros(dimensions)
         dx[i] = dl / 2
+        #rospy.loginfo(f"{location.shape} {dx.shape}")
         x1 = location - dx
         x2 = location + dx
         j1.append(func(x1))
@@ -73,15 +78,16 @@ def derive_gradient(func, location, dl) :
     return (np.array(j2) - np.array(j1)) / dl
 
 def ekf_predict(previous_state, previous_covariance, input, motion_model, motion_noise, dt) :
+    #rospy.loginfo(f"{input.shape}")
     A = derive_gradient(motion_model, input, 0.1)
 
     # Returns (mean, covariance)
     return (previous_state + dt * np.matrix(motion_model(input)).T, A @ previous_covariance @ A.T + motion_noise)
 
 def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
-    C = derive_gradient(sensor_model, predicted_state.T, 0.1)
+    C = derive_gradient(sensor_model, np.array(predicted_state).T.reshape(-1), 0.1).T
+    rospy.loginfo(f"{predicted_state.shape} {C} {predicted_covariance.shape} {sensor_noise.shape}")
     K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
-    
     # Returns (mean, covariance)
     return (predicted_state + K @ (observation - sensor_model(predicted_state)), (np.eye(len(predicted_state)) - K @ C) @ predicted_covariance)
 
@@ -101,7 +107,7 @@ class BallLocalizer :
         self.minimum_observable_distance = 155
         # checked via moving ball to edge of camera FOV to check angle
         self.observable_angle = 0.48 # OLD: 0.63
-        self.scale = 1 / 5
+        self.scale = 1 / 20
         self.frame_height = int(self.observable_distance * self.scale)
         self.frame_width = int(self.observable_distance * math.sin(self.observable_angle) * 2 * self.scale)
         self.distance_noise = 0.05
@@ -110,7 +116,7 @@ class BallLocalizer :
         # Index 0: (+) is away from camera, (-) is towards camera
         # Index 1: (+) is to the right, (-) is to the left
         # y=200 seems optimal for midterm presentation
-        self.motion_control = np.array([0, 0])
+        self.motion_control = np.array([0, 0]).T
         
         # noise in x ... noise in y
         self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
@@ -132,14 +138,14 @@ class BallLocalizer :
         rospy.spin()
 
     def motion_model(self, u) :
-        return np.array([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])], dtype=np.float64)
+        return np.array([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])], dtype=np.float64).T
 
     def sensor_model(self, x) :
-        return local_target_pose_to_global(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
+        return x
 
     # TODO: sensor noise for angle
     def sensor_noise(self, d) :
-        return np.matrix([[0.3 * 1.81 ** d, 0], [0, 0.1]])
+        return np.matrix([[300 * 1.81 ** (d / 1000), 0], [0, 0.1]])
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
@@ -162,7 +168,7 @@ class BallLocalizer :
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
-
+            dist.u = local_target_pose_to_global(dist.u, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation).T
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, self.sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
 
@@ -207,15 +213,15 @@ class BallLocalizer :
 
         pose_with_covariance = PoseWithCovariance()
 
-        pose_with_covariance.header.frame_id = "map"
-        pose_with_covariance.header.stamp = rospy.Time.now()
+        #pose_with_covariance.header.frame_id = "map"
+        #pose_with_covariance.header.stamp = rospy.Time.now()
 
         pose_with_covariance.pose.position.x = self.last_dist.u[0][0] / 1000
         pose_with_covariance.pose.position.y = self.last_dist.u[1][0] / 1000
         pose_with_covariance.pose.position.z = 0
 
-        pose_with_covariance.covariance = np.array([[self.last_dist[0, 0], self.last_dist[0, 1], 0, 0, 0, 0], 
-                                                    [self.last_dist[1, 0], self.last_dist[1, 1], 0, 0, 0, 0], 
+        pose_with_covariance.covariance = np.array([[self.last_dist.S[0, 0], self.last_dist.S[0, 1], 0, 0, 0, 0], 
+                                                    [self.last_dist.S[1, 0], self.last_dist.S[1, 1], 0, 0, 0, 0], 
                                                     [0, 0, 0, 0, 0, 0], 
                                                     [0, 0, 0, 0, 0, 0], 
                                                     [0, 0, 0, 0, 0, 0], 
