@@ -34,17 +34,17 @@ class Gauss2D:
         ud = x - self.u
         return math.exp(-ud.T @ self.invS @ ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
 
-def rotational_matrix(theta: float) -> np.matrix :
+def rotational_matrix_2D(theta: float) -> np.matrix :
     return np.array([[math.cos(theta), -math.sin(theta)],[math.sin(theta), math.cos(theta)]], dtype=np.float64)
 
 def gauss2D_from_polar(u_d: float, u_theta: float, S: np.matrix) -> Gauss2D :
-    R = rotational_matrix(u_theta)
+    R = rotational_matrix_2D(u_theta)
     S_v = R @ S @ R.T
     return Gauss2D(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
 
 def local_target_pose_to_global(target_pose: np.array, sensor_translation: np.array, sensor_theta: float, robot_pose: np.array, robot_theta: float) -> np.array :
-    R_R = rotational_matrix(sensor_theta)
-    R_G = rotational_matrix(robot_theta)
+    R_R = rotational_matrix_2D(sensor_theta)
+    R_G = rotational_matrix_2D(robot_theta)
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
 
 def ellipse_from_gauss2D(dist) :
@@ -104,8 +104,6 @@ class BallLocalizer :
         self.scale = 1 / 5
         self.frame_height = int(self.observable_distance * self.scale)
         self.frame_width = int(self.observable_distance * math.sin(self.observable_angle) * 2 * self.scale)
-        self.distance_noise = 0.05
-        self.angle_noise = 0.01
 
         # Index 0: (+) is away from camera, (-) is towards camera
         # Index 1: (+) is to the right, (-) is to the left
