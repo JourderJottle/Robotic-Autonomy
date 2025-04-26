@@ -19,7 +19,7 @@ from collections import deque
 
 class Gauss2D:
 
-    def __init__(self, u: np.matrix, S: np.matrix) :
+    def __init__(self, u: np.array, S: np.array) :
         self.u = u
         self.S = S
         
@@ -30,24 +30,21 @@ class Gauss2D:
         self.invS = np.linalg.inv(self.S)
         self.detS = np.linalg.det(self.S)
 
-    def probability(self, x: np.matrix) -> float :
+    def probability(self, x: np.array) -> float :
         ud = x - self.u
         return math.exp(-ud.T @ self.invS @ ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
 
-def rotational_matrix_2D(theta: float) -> np.matrix :
+def rotational_matrix_2D(theta: float) -> np.array :
     return np.array([[math.cos(theta), -math.sin(theta)],[math.sin(theta), math.cos(theta)]], dtype=np.float64)
 
-def gauss2D_from_polar(u_d: float, u_theta: float, S: np.matrix) -> Gauss2D :
+def gauss2D_from_polar(u_d: float, u_theta: float, S: np.array) -> Gauss2D :
     R = rotational_matrix_2D(u_theta)
     S_v = R @ S @ R.T
-    #rospy.loginfo(f"{S_v}")
     return Gauss2D(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
 
 def local_target_pose_to_global(target_pose: np.array, sensor_translation: np.array, sensor_theta: float, robot_pose: np.array, robot_theta: float) -> np.array :
     R_R = rotational_matrix_2D(sensor_theta)
     R_G = rotational_matrix_2D(robot_theta)
-    rospy.loginfo(f"{R_R.shape} {target_pose.shape}")
-    #rospy.loginfo(f"{R_R} {target_pose}")
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
 
 def ellipse_from_gauss2D(dist) :
@@ -63,30 +60,25 @@ def ellipse_from_gauss2D(dist) :
     return dist.u, l1, l2, angle
 
 def derive_gradient(func, location, dl) :
-    rospy.loginfo(f"{location}")
-    dimensions = len(location)
+    dimensions = location.shape[0]
     j1 = []
     j2 = []
     for i in range(dimensions) :
-        dx = np.zeros(dimensions)
+        dx = np.vstack(np.zeros(dimensions))
         dx[i] = dl / 2
-        #rospy.loginfo(f"{location.shape} {dx.shape}")
         x1 = location - dx
         x2 = location + dx
         j1.append(func(x1))
         j2.append(func(x2))
-    return (np.array(j2) - np.array(j1)) / dl
+    return np.matrix((np.array(j2) - np.array(j1)) / dl)
 
 def ekf_predict(previous_state, previous_covariance, input, motion_model, motion_noise, dt) :
-    #rospy.loginfo(f"{input.shape}")
     A = derive_gradient(motion_model, input, 0.1)
-
     # Returns (mean, covariance)
-    return (previous_state + dt * np.matrix(motion_model(input)).T, A @ previous_covariance @ A.T + motion_noise)
+    return (previous_state + dt * motion_model, A @ previous_covariance @ A.T + motion_noise)
 
 def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model, sensor_noise) :
-    C = derive_gradient(sensor_model, np.array(predicted_state).T.reshape(-1), 0.1).T
-    rospy.loginfo(f"{predicted_state.shape} {C} {predicted_covariance.shape} {sensor_noise.shape}")
+    C = derive_gradient(sensor_model, predicted_state, 0.1)
     K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
     # Returns (mean, covariance)
     return (predicted_state + K @ (observation - sensor_model(predicted_state)), (np.eye(len(predicted_state)) - K @ C) @ predicted_covariance)
@@ -114,18 +106,18 @@ class BallLocalizer :
         # Index 0: (+) is away from camera, (-) is towards camera
         # Index 1: (+) is to the right, (-) is to the left
         # y=200 seems optimal for midterm presentation
-        self.motion_control = np.array([0, 0]).T
+        self.motion_control = np.array([[0], [0]], dtype=np.float64)
         
         # noise in x ... noise in y
-        self.motion_noise = np.matrix([[10, 0.0], [0.0, 10]])
+        self.motion_noise = np.array([[10, 0.0], [0.0, 10]], dtype=np.float64)
         
-        self.last_dist = gauss2D_from_polar(8000, 0, np.matrix([[0, 0], [0, 0]]))
+        self.last_dist = gauss2D_from_polar(8000, 0, np.array([[0, 0], [0, 0]], dtype=np.float64))
         self.last_time = rospy.get_rostime().secs
-        self.robot_pose = np.array([0, 0], dtype=np.float64).T
+        self.robot_pose = np.array([[0], [0]], dtype=np.float64)
         self.robot_orientation = 0
 
         # millimeters
-        self.sensor_translation = np.array([-228.6, 0], dtype=np.float64).T
+        self.sensor_translation = np.array([[-228.6], [0]], dtype=np.float64)
         self.sensor_theta = 0
 
         self.draw_observation = False
@@ -136,14 +128,14 @@ class BallLocalizer :
         rospy.spin()
 
     def motion_model(self, u) :
-        return np.array([u[0] * math.cos(u[1]), u[0] * math.sin(u[1])], dtype=np.float64).T
+        return np.array([[u[0, 0] * math.cos(u[1, 0])], [u[0, 0] * math.sin(u[1, 0])]], dtype=np.float64)
 
     def sensor_model(self, x) :
-        return x
+        return local_target_pose_to_global(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
 
     # TODO: sensor noise for angle
     def sensor_noise(self, d) :
-        return np.matrix([[300 * 1.81 ** (d / 1000), 0], [0, 0.1]])
+        return np.array([[300 * 1.81 ** (d / 1000), 0], [0, 0.1]], dtype=np.float64)
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
@@ -166,7 +158,6 @@ class BallLocalizer :
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
-            dist.u = local_target_pose_to_global(dist.u, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation).T
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, self.sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
 
@@ -235,7 +226,7 @@ class BallLocalizer :
     def odom_callback(self, odom) :
         orientation = odom.pose.pose.orientation
         (roll, pitch, yaw) = euler_from_quaternion(orientation.x, orientation.y, orientation.z, orientation.w)
-        self.robot_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y], dtype=np.float64)
+        self.robot_pose = np.array([[odom.pose.pose.position.x], [odom.pose.pose.position.y]], dtype=np.float64)
         self.robot_orientation = yaw
 
 if __name__ == '__main__':
