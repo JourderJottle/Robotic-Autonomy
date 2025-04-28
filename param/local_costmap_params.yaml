@@ -11,3 +11,9 @@ local_costmap:
   width: 3
   height: 3
   resolution: 0.05
+
+  plugins:
+    - {name: opposing_robot_layer, type: "opposing_robot_layer::OpposingRobotLayer"}
+  
+  opposing_robot_layer:
+    enabled: true

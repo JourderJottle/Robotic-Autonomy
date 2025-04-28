@@ -73,7 +73,7 @@ void controlCallback( const geometry_msgs::Twist& twist_msg){
   if(-throttle_threshold > omega_left || omega_left > throttle_threshold){
     MotorLeft.Throttle(omega_left);
   } else{
-    MotorLeft.Stop();
+    MotorLeft.Stop(); 
   }
   // Right
   if(-throttle_threshold > omega_right || omega_right > throttle_threshold){
