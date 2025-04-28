@@ -9,6 +9,7 @@ from geometry_msgs.msg import PoseWithCovariance
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseWithCovarianceStamped
 import tf2_ros
 import tf2_geometry_msgs
 import numpy as np
@@ -89,7 +90,7 @@ class BallLocalizer :
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
         rospy.Subscriber("/rtabmap/odom", Odometry, self.odom_callback)
         self.marker_publisher = rospy.Publisher("/ball_variance_ellipse", Marker, queue_size=10)
-        self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovariance, queue_size=10)
+        self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovarianceStamped, queue_size=10)
         
         # checked via tape measurer
         self.observable_distance = 10000 # extended via smaller radius minimum
@@ -203,23 +204,47 @@ class BallLocalizer :
 
         self.marker_publisher.publish(marker)
 
-        pose_with_covariance = PoseWithCovariance()
+        # pose_with_covariance = PoseWithCovariance()
 
-        #pose_with_covariance.header.frame_id = "map"
-        #pose_with_covariance.header.stamp = rospy.Time.now()
+        # #pose_with_covariance.header.frame_id = "map"
+        # #pose_with_covariance.header.stamp = rospy.Time.now()
 
-        pose_with_covariance.pose.position.x = self.last_dist.u[0][0] / 1000
-        pose_with_covariance.pose.position.y = self.last_dist.u[1][0] / 1000
-        pose_with_covariance.pose.position.z = 0
+        # pose_with_covariance.pose.position.x = self.last_dist.u[0][0] / 1000
+        # pose_with_covariance.pose.position.y = self.last_dist.u[1][0] / 1000
+        # pose_with_covariance.pose.position.z = 0
 
-        pose_with_covariance.covariance = np.array([[self.last_dist.S[0, 0], self.last_dist.S[0, 1], 0, 0, 0, 0], 
-                                                    [self.last_dist.S[1, 0], self.last_dist.S[1, 1], 0, 0, 0, 0], 
-                                                    [0, 0, 0, 0, 0, 0], 
-                                                    [0, 0, 0, 0, 0, 0], 
-                                                    [0, 0, 0, 0, 0, 0], 
-                                                    [0, 0, 0, 0, 0, 0]], dtype=np.float64)
+        # pose_with_covariance.covariance = np.array([[self.last_dist.S[0, 0], self.last_dist.S[0, 1], 0, 0, 0, 0], 
+        #                                             [self.last_dist.S[1, 0], self.last_dist.S[1, 1], 0, 0, 0, 0], 
+        #                                             [0, 0, 0, 0, 0, 0], 
+        #                                             [0, 0, 0, 0, 0, 0], 
+        #                                             [0, 0, 0, 0, 0, 0], 
+        #                                             [0, 0, 0, 0, 0, 0]], dtype=np.float64)
         
-        self.global_ball_data_publisher.publish(pose_with_covariance)
+        # self.global_ball_data_publisher.publish(pose_with_covariance)
+        
+
+        pose_with_covariance_stamped = PoseWithCovarianceStamped()
+
+        pose_with_covariance_stamped.header.frame_id = "map"  # or "odom", or whatever global frame you're using
+        pose_with_covariance_stamped.header.stamp = rospy.Time.now()
+
+        pose_with_covariance_stamped.pose.pose.position.x = self.last_dist.u[0][0] / 1000
+        pose_with_covariance_stamped.pose.pose.position.y = self.last_dist.u[1][0] / 1000
+        pose_with_covariance_stamped.pose.pose.position.z = 0
+
+        pose_with_covariance_stamped.pose.covariance = np.array([
+            [self.last_dist.S[0, 0], self.last_dist.S[0, 1], 0, 0, 0, 0], 
+            [self.last_dist.S[1, 0], self.last_dist.S[1, 1], 0, 0, 0, 0], 
+            [0, 0, 0, 0, 0, 0], 
+            [0, 0, 0, 0, 0, 0], 
+            [0, 0, 0, 0, 0, 0], 
+            [0, 0, 0, 0, 0, 0]
+        ], dtype=np.float64).flatten().tolist()
+
+        self.global_ball_data_publisher.publish(pose_with_covariance_stamped)
+
+        
+        
 
         if self.draw_estimation or self.draw_estimation :
             cv.imshow('Space', display_frame)
