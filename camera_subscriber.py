@@ -34,19 +34,12 @@ class BallTracker:
 
         self.minimum_contour_radius = 5
         self.minimum_contour_fill = 0.3
+        self.minimum_contour_roundness = 0.5
 
         rospy.loginfo("Ball Tracker Node Initialized")
         
         # spin instead of while true
         rospy.spin()
-
-    def contour_picker(self, contour) :
-        (x, y), r = cv.minEnclosingCircle(contour)
-        area = cv.contourArea(contour)
-        if r > self.minimum_contour_radius and area / math.pi * r**2 > self.minimum_contour_fill :
-            return area
-        else :
-            return 0
 
     def optimized_max(self, contours) :
         largest_contour = None
@@ -58,7 +51,7 @@ class BallTracker:
             area = cv.contourArea(c)
             if area > max :
                 (x, y), r = cv.minEnclosingCircle(c)
-                if r > self.minimum_contour_radius and area / math.pi * r**2 > self.minimum_contour_fill :
+                if r > self.minimum_contour_radius and math.abs(cv.arcLength(c, True) / 2 * math.pi * r - 1) > self.minimum_contour_roundness :#area / math.pi * r**2 > self.minimum_contour_fill :
                     largest_contour = c
                     max = area
         return largest_contour, x, y, r
@@ -125,7 +118,6 @@ class BallTracker:
             
             if len(contours) != 0:
                 # Find largest because that's probably the ball
-                #largest_contour = max(contours, key=self.contour_picker)
                 largest_contour, x, y, r = self.optimized_max(contours)
                 
                 #(x, y), r = cv.minEnclosingCircle(largest_contour)
