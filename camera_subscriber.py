@@ -34,7 +34,7 @@ class BallTracker:
 
         self.minimum_contour_radius = 5
         self.minimum_contour_fill = 0.3
-        self.minimum_contour_roundness = 0.5
+        self.minimum_contour_roundness = 0.7
 
         rospy.loginfo("Ball Tracker Node Initialized")
         
@@ -51,7 +51,7 @@ class BallTracker:
             area = cv.contourArea(c)
             if area > max :
                 (x, y), r = cv.minEnclosingCircle(c)
-                if r > self.minimum_contour_radius and math.abs(cv.arcLength(c, True) / 2 * math.pi * r - 1) > self.minimum_contour_roundness :#area / math.pi * r**2 > self.minimum_contour_fill :
+                if r > self.minimum_contour_radius and abs(cv.arcLength(c, True) / 2 * math.pi * r - 1) > self.minimum_contour_roundness :#area / math.pi * r**2 > self.minimum_contour_fill :
                     largest_contour = c
                     max = area
         return largest_contour, x, y, r
