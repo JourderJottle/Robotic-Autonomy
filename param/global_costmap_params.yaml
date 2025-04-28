@@ -10,11 +10,8 @@ global_costmap:
   plugins:
   - {name: static_layer, type: "costmap_2d::StaticLayer"}
   - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
-  - {name: opposing_robot_layer, type: "opposing_robot_layer::OpposingRobotLayer"}
   static_layer:
     map_topic: /map
     subscribe_to_updates: true
   inflation_layer:
     inflation_radius: 0.8
-  opposing_robot_layer:
-    enabled: true
