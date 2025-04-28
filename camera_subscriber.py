@@ -49,10 +49,13 @@ class BallTracker:
         for c in contours :
             area = cv.contourArea(c)
             if area > max :
-                (x, y), r = cv.minEnclosingCircle(c)
-                if r > self.minimum_contour_radius and area / (math.pi * r**2) > self.minimum_contour_fill :
+                (x1, y1), r1 = cv.minEnclosingCircle(c)
+                if r1 > self.minimum_contour_radius and area / (math.pi * r1**2) > self.minimum_contour_fill :
                     largest_contour = c
                     max = area
+                    x = x1
+                    y = y1
+                    r = r1
         return largest_contour, x, y, r
 
     def d_and_theta_callback(self, data) :
@@ -99,15 +102,6 @@ class BallTracker:
             contours = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
             contours = imutils.grab_contours(contours)
             cv.drawContours(frame_with_contours, contours, -1, (0, 0, 255), 2)
-
-            """
-            frame_with_largest_circle = frame.copy()
-            circles = None
-            cv.HoughCircles(mask, circles, cv.CV_HOUGH_GRADIENT, 1, 50, 50, 0.9, 10, -1)
-            if len(circles) > 0 and len(circles[0]) == 3 :
-                largest_circle = circles[0][0]
-                cv.circle(frame_with_largest_circle, (largest_circle[0], largest_circle[1]), largest_circle[2], (0, 0, 255), 2)
-            """
 
             largest_contour = None
             x = 0
