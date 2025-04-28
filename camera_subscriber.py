@@ -33,7 +33,7 @@ class BallTracker:
         rospy.Subscriber("/d400/color/camera_info", CameraInfo, self.color_camera_info_callback)
 
         self.minimum_contour_radius = 5
-        self.minimum_contour_fill = 0.3
+        self.minimum_contour_fill = 0.5
 
         rospy.loginfo("Ball Tracker Node Initialized")
         
@@ -50,7 +50,7 @@ class BallTracker:
             area = cv.contourArea(c)
             if area > max :
                 (x, y), r = cv.minEnclosingCircle(c)
-                if r > self.minimum_contour_radius and area / math.pi * r**2 > self.minimum_contour_fill :
+                if r > self.minimum_contour_radius and area / (math.pi * r**2) > self.minimum_contour_fill :
                     largest_contour = c
                     max = area
         return largest_contour, x, y, r
@@ -124,7 +124,7 @@ class BallTracker:
                 r = int(r)
                 # minimum circle radius; it tends to see bits of the environment currently.
                 # also do a minimum area of the circle which the contour takes up? brainstorming ways to avoid seeing the box lids
-            if r > self.minimum_contour_radius and cv.contourArea(largest_contour) / (math.pi * r**2) > self.minimum_contour_fill :
+            if largest_contour is not None :
                 cv.circle(frame, center, r, (0, 255, 0), 2)
                 cv.circle(frame, center, 5, (0,0,255), -1)
                 cv.drawContours(frame, [largest_contour], -1, (255, 255, 255), 2)
