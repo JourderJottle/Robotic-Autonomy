@@ -135,7 +135,7 @@ class BallLocalizer :
 
     # TODO: sensor noise for angle
     def sensor_noise(self, d) :
-        return np.array([[300 * 1.81 ** (d / 1000), 0], [0, 0.1]], dtype=np.float64)
+        return np.array([[8.809328 * 1.000394 ** d, 0], [0, 0.1]], dtype=np.float64)
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
