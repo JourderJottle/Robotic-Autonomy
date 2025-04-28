@@ -16,4 +16,4 @@ local_costmap:
     - {name: opposing_robot_layer, type: "opposing_robot_layer::OpposingRobotLayer"}
   
   opposing_robot_layer:
-    enabled: false
+    enabled: true
