@@ -8,7 +8,7 @@ class PublishMovementFromController():
 
     def __init__(self): 
         # Set Speed Scaler:
-        self.safety_scale = 0.7
+        self.safety_scale = 0.2
         
         # Initialize Button Definitions; MODIFY FOR YOUR CONTROLLER.
         self.linear_axis = 1

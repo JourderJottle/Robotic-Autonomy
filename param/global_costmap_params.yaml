@@ -14,7 +14,7 @@ static_layer:
   map_topic: /map
   subscribe_to_updates: true
 inflation_layer:
-  inflation_radius: 0.8
+  inflation_radius: 0.03
 
 
 opposing_robot_layer:
