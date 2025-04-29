@@ -69,8 +69,8 @@ def derive_gradient(func, location, dl) :
         dx[i] = dl / 2
         x1 = location - dx
         x2 = location + dx
-        j1.append(func(x1))
-        j2.append(func(x2))
+        j1.append(func(x1).flatten())
+        j2.append(func(x2).flatten())
     return np.matrix((np.array(j2) - np.array(j1)) / dl)
 
 def ekf_predict(previous_state, previous_covariance, input, motion_model, motion_noise, dt) :
@@ -133,6 +133,9 @@ class BallLocalizer :
         return np.array([[u[0, 0] * math.cos(u[1, 0])], [u[0, 0] * math.sin(u[1, 0])]], dtype=np.float64)
 
     def sensor_model(self, x) :
+        return x
+
+    def transform_to_global(self, x) :
         return local_target_pose_to_global(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
 
     # TODO: sensor noise for angle
@@ -160,7 +163,7 @@ class BallLocalizer :
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
-            (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.sensor_model(dist.u), self.sensor_model, dist.S)
+            (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.transform_to_global(dist.u), self.sensor_model, dist.S)
             #delta_xy = (corrected_mean - self.last_dist.u) / dt
             #self.motion_control = np.array([[math.sqrt(delta_xy[0, 0]**2 + delta_xy[1, 0]**2)], [math.atan2(-corrected_mean[0, 0], -corrected_mean[1, 0])]])
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
