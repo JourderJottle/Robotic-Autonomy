@@ -18,30 +18,31 @@ import math
 import cv2 as cv
 from collections import deque
 
-class Gauss2D:
+class GaussND:
 
     def __init__(self, u: np.array, S: np.array) :
         self.u = u
         self.S = S
+        self.dimensions = self.u.shape[0]
         
         # add epsilon so no det=0 error
         epsilon = 1e-6
         self.S += np.eye(self.S.shape[0]) * epsilon
         
-        self.invS = np.linalg.inv(self.S)
+        self.invS = np.linalg.pinv(self.S)
         self.detS = np.linalg.det(self.S)
 
     def probability(self, x: np.array) -> float :
         ud = x - self.u
-        return math.exp(-ud.T @ self.invS @ ud / 2) / math.sqrt(math.pow(2*math.pi, 2) * self.detS)
+        return math.exp(-ud.T @ self.invS @ ud / 2) / math.sqrt(math.pow(2*math.pi, self.dimensions) * self.detS)
 
 def rotational_matrix_2D(theta: float) -> np.array :
     return np.array([[math.cos(theta), -math.sin(theta)],[math.sin(theta), math.cos(theta)]], dtype=np.float64)
 
-def gauss2D_from_polar(u_d: float, u_theta: float, S: np.array) -> Gauss2D :
+def gauss2D_from_polar(u_d: float, u_theta: float, S: np.array) -> GaussND :
     R = rotational_matrix_2D(u_theta)
     S_v = R @ S @ R.T
-    return Gauss2D(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
+    return GaussND(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
 
 def local_target_pose_to_global(target_pose: np.array, sensor_translation: np.array, sensor_theta: float, robot_pose: np.array, robot_theta: float) -> np.array :
     R_R = rotational_matrix_2D(sensor_theta)
@@ -112,14 +113,13 @@ class BallLocalizer :
         # noise in x ... noise in y
         self.motion_noise = np.array([[10, 0.0], [0.0, 10]], dtype=np.float64)
         
-        self.last_dist = gauss2D_from_polar(8000, 0, np.array([[0, 0], [0, 0]], dtype=np.float64))
+        self.last_dist = GaussND(np.array([[8000], [0], [0]], dtype=np.float64), np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype=np.float64))
         self.last_time = rospy.get_rostime().secs
-        self.last_observation_time = None
         self.robot_pose = np.array([[0], [0]], dtype=np.float64)
         self.robot_orientation = 0
 
         # millimeters
-        self.sensor_translation = np.array([[-228.6], [0]], dtype=np.float64)
+        self.sensor_translation = np.array([[-228.6], [0], [0]], dtype=np.float64)
         self.sensor_theta = 0
 
         self.draw_observation = False
@@ -130,14 +130,15 @@ class BallLocalizer :
         rospy.spin()
 
     def motion_model(self, u) :
-        return np.array([[u[0, 0] * math.cos(u[1, 0])], [u[0, 0] * math.sin(u[1, 0])]], dtype=np.float64)
+        return np.array([[u[0, 0] * math.cos(self.last_dist[2, 0])], [u[0, 0] * math.sin(self.last_dist[2, 0])], [u[1, 0]]], dtype=np.float64)
 
     def sensor_model(self, x) :
-        return local_target_pose_to_global(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
+        z = local_target_pose_to_global(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
+        return np.array([[z[0, 0]], [z[1, 0], [math.atan2(z[0, 0] - self.last_dist.u[0, 0], z[1, 0] - self.last_dist.u[1, 0])]]], dtype=np.float64)
 
-    # TODO: sensor noise for angle
+    # TODO: sensor noise for angle and orientation
     def sensor_noise(self, d) :
-        return np.array([[8.809328 * 1.000394 ** d, 0], [0, 0.1]], dtype=np.float64)
+        return np.array([[8.809328 * 1.000394 ** d, 0, 0], [0, 0.1, 0], [0, 0, 0.1]], dtype=np.float64)
         
     def callback(self, data) :
         """Data 0 is distance, Data 1 is theta"""
@@ -161,13 +162,11 @@ class BallLocalizer :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, self.sensor_model, dist.S)
-            #delta_xy = (corrected_mean - self.last_dist.u) / dt
-            #self.motion_control = np.array([[math.sqrt(delta_xy[0, 0]**2 + delta_xy[1, 0]**2)], [math.atan2(-corrected_mean[0, 0], -corrected_mean[1, 0])]])
-            self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
+            self.last_dist = GaussND(corrected_mean, corrected_covariance)
 
         else :
 
-            self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
+            self.last_dist = GaussND(predicted_mean, predicted_covariance)
         
         # rospy.loginfo(f"u: {self.last_dist.u}")
         # rospy.loginfo(f"S: {self.last_dist.S}")
@@ -230,7 +229,7 @@ class BallLocalizer :
 
         pose_with_covariance_stamped.pose.pose.position.x = self.last_dist.u[0][0] / 1000
         pose_with_covariance_stamped.pose.pose.position.y = self.last_dist.u[1][0] / 1000
-        pose_with_covariance_stamped.pose.pose.position.z = 0
+        pose_with_covariance_stamped.pose.pose.position.z = self.last_dist.u[2][0] / 1000
 
         pose_with_covariance_stamped.pose.covariance = np.array([
             [self.last_dist.S[0, 0] / 1000, self.last_dist.S[0, 1] / 1000, 0, 0, 0, 0], 
@@ -238,7 +237,7 @@ class BallLocalizer :
             [0, 0, 0, 0, 0, 0], 
             [0, 0, 0, 0, 0, 0], 
             [0, 0, 0, 0, 0, 0], 
-            [0, 0, 0, 0, 0, 0]
+            [0, 0, 0, 0, 0, self.last_dist.S[2, 2]]
         ], dtype=np.float64).flatten().tolist()
 
         self.global_ball_data_publisher.publish(pose_with_covariance_stamped)
