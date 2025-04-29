@@ -233,8 +233,8 @@ class BallLocalizer :
         pose_with_covariance_stamped.pose.pose.position.z = 0
 
         pose_with_covariance_stamped.pose.covariance = np.array([
-            [self.last_dist.S[0, 0], self.last_dist.S[0, 1], 0, 0, 0, 0], 
-            [self.last_dist.S[1, 0], self.last_dist.S[1, 1], 0, 0, 0, 0], 
+            [self.last_dist.S[0, 0] / 1000, self.last_dist.S[0, 1] / 1000, 0, 0, 0, 0], 
+            [self.last_dist.S[1, 0] / 1000, self.last_dist.S[1, 1] / 1000, 0, 0, 0, 0], 
             [0, 0, 0, 0, 0, 0], 
             [0, 0, 0, 0, 0, 0], 
             [0, 0, 0, 0, 0, 0], 
