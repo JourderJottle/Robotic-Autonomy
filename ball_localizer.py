@@ -82,7 +82,7 @@ def ekf_correct(predicted_state, predicted_covariance, observation, sensor_model
     C = derive_gradient(sensor_model, predicted_state, 0.1)
     K = predicted_covariance @ C.T @ np.linalg.pinv(C @ predicted_covariance @ C.T + sensor_noise)
     # Returns (mean, covariance)
-    return (predicted_state + K @ (observation - sensor_model(predicted_state)), (np.eye(len(predicted_state)) - K @ C) @ predicted_covariance)
+    return (predicted_state + K @ (observation - predicted_state), (np.eye(len(predicted_state)) - K @ C) @ predicted_covariance)
 
 class BallLocalizer :
     def __init__(self) :
