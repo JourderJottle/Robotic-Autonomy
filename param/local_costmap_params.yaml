@@ -1,4 +1,4 @@
-global_frame: odom
+global_frame: map
 robot_base_frame: base_link
 
 update_frequency: 10.0
@@ -14,7 +14,6 @@ resolution: 0.05
 plugins:
   - {name: opposing_robot_layer, type: "opposing_robot_layer/OpposingRobotLayer"}
   - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
-  - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
 
 opposing_robot_layer:
   enabled: true
@@ -22,11 +21,8 @@ obstacle_layer:
   observation_sources: pointcloud2
   pointcloud2:
     data_type: PointCloud2
-    topic: cloud_map
+    topic: /rtabmap/local_grid_obstacle
     marking: true
     clearing: true
     obstacle_range: 2.5
     raytrace_range: 3.0
-
-inflation_layer:
-  inflation_radius: 0.5

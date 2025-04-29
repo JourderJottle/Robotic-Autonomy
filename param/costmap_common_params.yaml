@@ -11,7 +11,7 @@ obstacle_layer:
   pointcloud: 
     sensor_frame: d400_link
     data_type: PointCloud2
-    topic: /rtabmap/cloud_map
+    topic: /rtabmap/local_grid_obstacle
     marking: true
     clearing: true
  
