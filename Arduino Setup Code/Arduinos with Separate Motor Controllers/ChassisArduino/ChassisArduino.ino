@@ -57,11 +57,11 @@ float throttle_threshold = 0.04;
 float wheel_base = 0.45; // In meters
 float wheel_radius = 0.15/2;
 float max_speed = 1.4;
-// float motor_radius = 49.0
+// float motor_radius = 49.0;
 
 float speed_scalar = 1;
-// float speed_cap = 1.0
-// float radians_per_second_to_percent = wheel_radius / motor_radius / max_speed
+// float speed_cap = 1.0;
+// float radians_per_second_to_percent = wheel_radius / motor_radius / max_speed;
 
 void controlCallback( const geometry_msgs::Twist& twist_msg){
   // Scale dx & dtheta
