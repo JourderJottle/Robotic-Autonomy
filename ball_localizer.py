@@ -160,7 +160,7 @@ class BallLocalizer :
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
-            (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, dist.u, self.sensor_model, dist.S)
+            (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.sensor_model(dist.u), self.sensor_model, dist.S)
             #delta_xy = (corrected_mean - self.last_dist.u) / dt
             #self.motion_control = np.array([[math.sqrt(delta_xy[0, 0]**2 + delta_xy[1, 0]**2)], [math.atan2(-corrected_mean[0, 0], -corrected_mean[1, 0])]])
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
