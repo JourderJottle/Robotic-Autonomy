@@ -39,6 +39,7 @@ std_msgs::String str_msg;
 
 // Setup Variables
 float dtheta = 0, dx = 0, omega_left = 0, omega_right = 0;
+// float v_x = 0, v_theta = 0;
 bool leftForward, rightForward;
 
 // Calibration Variables
@@ -46,6 +47,8 @@ float right_lin_cal = 1.300;
 float left_lin_cal = 1.000;
 float right_ang_cal = 1.150;
 float left_ang_cal = 1.000;
+// float left_cal = 1.0;
+// float right_cal = 1.0;
 
 float theta_scale = 0.1;
 float linear_scale = 0.2;
@@ -53,9 +56,12 @@ float throttle_threshold = 0.04;
 
 float wheel_base = 0.45; // In meters
 float wheel_radius = 0.15/2;
-float max_speed = 1.4; 
+float max_speed = 1.4;
+// float motor_radius = 49.0
 
 float speed_scalar = 1;
+// float speed_cap = 1.0
+// float radians_per_second_to_percent = wheel_radius / motor_radius / max_speed
 
 void controlCallback( const geometry_msgs::Twist& twist_msg){
   // Scale dx & dtheta
@@ -66,6 +72,15 @@ void controlCallback( const geometry_msgs::Twist& twist_msg){
   
   omega_right = min(max((-dx*right_ang_cal - right_lin_cal*dtheta * wheel_base / 2) / wheel_radius, -1), 1)/speed_scalar; // If commands are flipped, flip these variables. 
   omega_left = min(max((-dx*left_ang_cal + left_lin_cal*dtheta * wheel_base / 2) / wheel_radius, -1), 1)/speed_scalar;
+
+  // James here with some math that I can better wrap my head around and I hope is easier to work with than whatever engineering mess this is ^
+  /*
+  v_x = twist_msg.linear.x;
+  v_theta = twist_msg.angular.z;
+
+  omega_left = min(max((v_x - wheel_base * v_theta / 2) * radians_per_second_to_percent * left_cal, -speed_cap), speed_cap);
+  omega_right = min(max((v_x + wheel_base * v_theta / 2) * radians_per_second_to_percent * right_cal, -speed_cap), speed_cap);
+  */
 
 
   // Check Minimum Throttle
