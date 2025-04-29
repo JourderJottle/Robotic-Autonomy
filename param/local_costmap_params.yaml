@@ -1,19 +1,18 @@
-local_costmap:
-  global_frame: odom
-  robot_base_frame: base_link
+global_frame: odom
+robot_base_frame: base_link
 
-  update_frequency: 10.0
-  publish_frequency: 10.0
-  transform_tolerance: 0.5  
+update_frequency: 10.0
+publish_frequency: 10.0
+transform_tolerance: 0.5  
 
-  static_map: false  
-  rolling_window: true
-  width: 3
-  height: 3
-  resolution: 0.05
+static_map: false  
+rolling_window: true
+width: 3
+height: 3
+resolution: 0.05
 
-  plugins:
-    - {name: opposing_robot_layer, type: "opposing_robot_layer/OpposingRobotLayer"}
-  
-  opposing_robot_layer:
-    enabled: true
+plugins:
+  - {name: opposing_robot_layer, type: "opposing_robot_layer/OpposingRobotLayer"}
+
+opposing_robot_layer:
+  enabled: true

@@ -1,17 +1,16 @@
-global_costmap:
-  global_frame: map
-  robot_base_frame: base_link
+global_frame: map
+robot_base_frame: base_link
 
-  update_frequency: 10.0
-  publish_frequency: 10.0
-  transform_tolerance: 0.5
+update_frequency: 10.0
+publish_frequency: 10.0
+transform_tolerance: 0.5
 
-  static_map: false
-  plugins:
-  - {name: static_layer, type: "costmap_2d::StaticLayer"}
-  - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
-  static_layer:
-    map_topic: /map
-    subscribe_to_updates: true
-  inflation_layer:
-    inflation_radius: 0.8
+static_map: false
+plugins:
+- {name: static_layer, type: "costmap_2d::StaticLayer"}
+- {name: inflation_layer, type: "costmap_2d::InflationLayer"}
+static_layer:
+  map_topic: /map
+  subscribe_to_updates: true
+inflation_layer:
+  inflation_radius: 0.8
