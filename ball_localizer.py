@@ -243,7 +243,7 @@ class BallLocalizer :
 
         self.global_ball_data_publisher.publish(pose_with_covariance_stamped)
 
-        
+        rospy.loginfo(f"ball pose according to ball localizer {self.last_dist.u}")
         
 
         if self.draw_estimation or self.draw_estimation :
