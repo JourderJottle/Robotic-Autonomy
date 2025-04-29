@@ -71,7 +71,7 @@ class BallTracker:
             depth_at_center = cv_img[y][x]
 
             self.ball_data_pub.publish(Float32MultiArray(data=[depth_at_center, self.ball_2d_data[2]]))
-            rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
+            # rospy.loginfo(f'Published d = {depth_at_center} and theta = {self.ball_2d_data[2]}')
         else :
             self.ball_data_pub.publish(Float32MultiArray(data=[0.0, 0.0]))
 
