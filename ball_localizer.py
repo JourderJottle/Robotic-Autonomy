@@ -254,7 +254,7 @@ class BallLocalizer :
     def odom_callback(self, odom) :
         orientation = odom.pose.pose.orientation
         (roll, pitch, yaw) = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
-        self.robot_pose = np.array([[odom.pose.pose.position.x], [odom.pose.pose.position.y]], dtype=np.float64)
+        self.robot_pose = np.array([[odom.pose.pose.position.x * 1000], [odom.pose.pose.position.y * 1000]], dtype=np.float64)
         self.robot_orientation = yaw
         rospy.loginfo(f"robot pose according to ball localizer {self.robot_pose}")
 
