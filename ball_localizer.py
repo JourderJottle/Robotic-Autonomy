@@ -123,7 +123,7 @@ class BallLocalizer :
         self.sensor_theta = 0
 
         self.draw_observation = False
-        self.draw_estimation = True
+        self.draw_estimation = False
 
         rospy.loginfo("Starting ball localizer...")
 
