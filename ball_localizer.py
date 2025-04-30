@@ -246,7 +246,7 @@ class BallLocalizer :
 
         self.global_ball_data_publisher.publish(pose_with_covariance_stamped)
 
-        rospy.loginfo(f"ball pose according to ball localizer {self.last_dist.u}")
+        rospy.loginfo(f"ball pose according to ball localizer (x y) {self.last_dist.u[0, 0]} {self.last_dist.u[1, 0]}")
         
 
         if self.draw_estimation or self.draw_estimation :
@@ -259,7 +259,7 @@ class BallLocalizer :
         (roll, pitch, yaw) = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
         self.robot_pose = np.array([[odom.pose.pose.position.x * 1000], [odom.pose.pose.position.y * 1000]], dtype=np.float64)
         self.robot_orientation = yaw
-        rospy.loginfo(f"robot pose according to ball localizer {self.robot_pose} {self.robot_orientation}")
+        rospy.loginfo(f"robot pose according to ball localizer (x y theta) {self.robot_pose[0, 0]} {self.robot_pose[1, 0]} {self.robot_orientation}")
 
 if __name__ == '__main__':
     try:
