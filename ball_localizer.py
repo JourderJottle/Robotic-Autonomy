@@ -142,7 +142,7 @@ class BallLocalizer :
         (trans, rot) = self.transform_listener.lookupTransform("/map", "/odom", rospy.get_rostime())
         (roll, pitch, yaw) = euler_from_quaternion(rot)
         R_M = rotational_matrix_2D(yaw)
-        return R_M @ local_target_pose_to_odom(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation) + np.vstack(trans[0:2])
+        return R_M @ local_target_pose_to_odom(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation) + np.vstack(trans[0:2]) * 1000
 
     # TODO: sensor noise for angle
     def sensor_noise(self, d) :
