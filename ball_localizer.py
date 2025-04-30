@@ -165,14 +165,14 @@ class BallLocalizer :
 
         (predicted_mean, predicted_covariance) = ekf_predict(self.last_dist.u, self.last_dist.S, self.motion_control, self.motion_model, self.motion_noise, dt)
 
-        if distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
+        if self.opponent_target_grabbed and distance > self.minimum_observable_distance and distance < self.observable_distance and abs(theta) < self.observable_angle :
             dist = gauss2D_from_polar(distance, theta, self.sensor_noise(distance))
             if self.draw_observation :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.transform_to_global(dist.u), self.sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
-            if not self.target_grabbed and self.opponent_target_grabbed :
+            if not self.target_grabbed :
                 self.target = PoseStamped()
                 self.target.header.frame_id = "map"
                 self.target.pose.position.x = corrected_mean[0, 0] / 1000
