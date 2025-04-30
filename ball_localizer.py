@@ -4,8 +4,7 @@
 import rospy
 from std_msgs.msg import Float32MultiArray
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Quaternion
-from geometry_msgs.msg import PoseWithCovariance
+from geometry_msgs.msg import PoseStamped
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from nav_msgs.msg import Odometry
@@ -92,6 +91,8 @@ class BallLocalizer :
         rospy.Subscriber("/rtabmap/odom", Odometry, self.odom_callback)
         self.marker_publisher = rospy.Publisher("/ball_variance_ellipse", Marker, queue_size=10)
         self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovarianceStamped, queue_size=10)
+        self.target_publisher = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+        self.transform_listener = tf.TransformListener()
         
         # checked via tape measurer
         self.observable_distance = 10000 # extended via smaller radius minimum
@@ -109,6 +110,9 @@ class BallLocalizer :
         # Index 1: (+) is to the right, (-) is to the left
         # y=200 seems optimal for midterm presentation
         self.motion_control = np.array([[0], [0]], dtype=np.float64)
+        self.opponent_speed = 1000
+        self.opponent_target = np.array([[0], [0]], dtype=np.float64)
+        self.opponent_target_grabbed = False
         
         # noise in x ... noise in y
         self.motion_noise = np.array([[10, 0.0], [0.0, 10]], dtype=np.float64)
@@ -123,26 +127,23 @@ class BallLocalizer :
         self.sensor_translation = np.array([[-228.6], [0]], dtype=np.float64)
         self.sensor_theta = 0
 
+        self.target_grabbed = False
+
         self.draw_observation = False
         self.draw_estimation = False
-
-        self.transform_listener = tf.TransformListener()
 
         rospy.loginfo("Starting ball localizer...")
 
         rospy.spin()
 
     def motion_model(self, u) :
-        return np.array([[u[0, 0] * math.cos(u[1, 0])], [u[0, 0] * math.sin(u[1, 0])]], dtype=np.float64)
+        return u
 
     def sensor_model(self, x) :
         return x
 
     def transform_to_global(self, x) :
-        (trans, rot) = self.transform_listener.lookupTransform("/map", "/odom", rospy.get_rostime())
-        (roll, pitch, yaw) = euler_from_quaternion(rot)
-        R_M = rotational_matrix_2D(yaw)
-        return R_M @ local_target_pose_to_odom(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation) + np.vstack(trans[0:2]) * 1000
+        return local_target_pose_to_odom(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
 
     # TODO: sensor noise for angle
     def sensor_noise(self, d) :
@@ -170,13 +171,23 @@ class BallLocalizer :
                 u, l1, l2, angle = ellipse_from_gauss2D(dist)
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.transform_to_global(dist.u), self.sensor_model, dist.S)
-            #delta_xy = (corrected_mean - self.last_dist.u) / dt
-            #self.motion_control = np.array([[math.sqrt(delta_xy[0, 0]**2 + delta_xy[1, 0]**2)], [math.atan2(-corrected_mean[0, 0], -corrected_mean[1, 0])]])
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
-
+            if not self.target_grabbed :
+                target = PoseStamped()
+                target.header.stamp = rospy.Time.now()
+                target.header.frame_id = "map"
+                target.pose.position.x = corrected_mean[0, 0]
+                target.pose.position.y = corrected_mean[1, 0]
+                self.target_publisher.publish(target)
+                self.target_grabbed = True
         else :
 
             self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
+
+        dx = self.last_dist.u[0, 0] - self.opponent_target[0, 0]
+        dy = self.last_dist.u[1, 0] - self.opponent_target[1, 0]
+        dv = math.sqrt(dx**2 + dy**2)
+        self.motion_control = np.array([[dx / dv * self.opponent_speed], [dy / dv * self.opponent_speed]], dtype=np.float64)
         
         # rospy.loginfo(f"u: {self.last_dist.u}")
         # rospy.loginfo(f"S: {self.last_dist.S}")
@@ -265,6 +276,14 @@ class BallLocalizer :
         (roll, pitch, yaw) = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
         self.robot_pose = np.array([[odom.pose.pose.position.x * 1000], [odom.pose.pose.position.y * 1000]], dtype=np.float64)
         self.robot_orientation = yaw
+        (trans, rot) = self.transform_listener.lookupTransform("/map", "/odom", rospy.get_rostime())
+        (roll, pitch, yaw) = euler_from_quaternion(rot)
+        R_M = rotational_matrix_2D(yaw)
+        self.robot_pose = R_M @ self.robot_pose + np.vstack(trans[0:2]) * 1000
+        self.robot_orientation + yaw
+        if not self.opponent_target_grabbed :
+            self.opponent_target = self.robot_pose
+            self.opponent_target_grabbed = True
         rospy.loginfo(f"robot pose according to ball localizer (x y theta) {self.robot_pose[0, 0]} {self.robot_pose[1, 0]} {self.robot_orientation}")
 
 if __name__ == '__main__':
