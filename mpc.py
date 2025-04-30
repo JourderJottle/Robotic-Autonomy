@@ -20,6 +20,7 @@ class MPC() :
         rospy.Subscriber("/waypoint", Pose, self.waypoint_callback)
         rospy.Subscriber("/map", OccupancyGrid, self.map_callback)
         rospy.Subscriber("/rtabmap/odom", Odometry, self.odom_callback)
+        rospy.Subscriber("/global_ball_data", PoseWithCovariance, self.ball_callback)
         self.transform_listener = tf.TransformListener()
         self.waypoint = None
         self.state = np.array([[0], [0], [0]], dtype=np.float64)
@@ -33,16 +34,20 @@ class MPC() :
         self.nk = 10
         self.last_time = rospy.get_rostime().secs
         self.controls_queue = deque()
+        self.end_tolerance = 1
+        self.ball_pose_with_cov = None
 
         self.drive_publisher = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
-        rospy.Timer(rospy.Duration(self.nk * self.dt), self.compute_controls)
-        rospy.Timer(rospy.Duration(self.dt), self.drive)
+        self.computation_timer = rospy.Timer(rospy.Duration(self.nk * self.dt), self.compute_controls)
+        self.drive_timer = rospy.Timer(rospy.Duration(self.dt), self.drive)
 
         rospy.spin()
 
     def occupancy_probability(self, x) :
-        return self.M.data[math.floor(x[1, 0] / self.map_resolution) * self.map_width + math.floor(x[0, 0] / self.map_resolution)]
+        distance_from_ball = math.sqrt((self.ball_pose_with_cov.pose.position.x - self.ball_pose_with_cov.covariance[0] - x[0, 0])**2 + (self.ball_pose_with_cov.pose.position.y - self.ball_pose_with_cov.covariance[7] - x[1, 0])**2)
+        danger_from_ball = 100 if distance_from_ball < 1 else (60 if distance_from_ball < 2 else (30 if distance_from_ball < 3 else 0))
+        return self.M.data[math.floor(x[1, 0] / self.map_resolution) * self.map_width + math.floor(x[0, 0] / self.map_resolution)] + danger_from_ball
     def motion_model(self, u, x) :
         return np.array([[x[0, 0] + u[0, 0] * math.cos(x[2, 0]) * self.dt], [x[1, 0] + u[0, 0] * math.sin(x[2, 0]) * self.dt], [x[2, 0] + u[1, 0] * self.dt]], dtype=np.float64)
     def integral_objective_function(self, x) :
@@ -76,9 +81,11 @@ class MPC() :
         robot_pose = R_M @ robot_pose + np.vstack(trans[0:2])
         robot_orientation += yaw
         self.state = np.array([[robot_pose[0, 0]], [robot_pose[1, 0]], [robot_orientation]], dtype=np.float64)
+    def ball_callback(self, pose) :
+        self.ball_pose_with_cov = pose
     def compute_controls(self, timer) :
         rospy.loginfo(f"{self.waypoint} {self.state}")
-        if self.M is not None and self.waypoint is not None :
+        if self.M is not None and self.waypoint is not None and math.sqrt((self.state[0, 0] - self.waypoint[0, 0])**2 + (self.state[1, 0] - self.waypoint[1, 0])**2) > self.end_tolerance :
             guess = [1, 0] * self.nk
             optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
             for i in range(0, len(optimized.x), 2) :
