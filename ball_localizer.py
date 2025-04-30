@@ -156,7 +156,7 @@ class BallLocalizer :
             cv.ellipse(display_frame, (int(self.frame_width / 2), self.frame_height), (int(self.minimum_observable_distance * self.scale), int(self.minimum_observable_distance * self.scale)), 0, 270 - math.degrees(self.observable_angle), 270 + math.degrees(self.observable_angle), (0, 0, 0), -1)
 
         distance = data.data[0]
-        theta = data.data[1]
+        theta = -data.data[1]
 
         time = rospy.get_rostime().to_sec()
         dt = time - self.last_time
@@ -197,10 +197,10 @@ class BallLocalizer :
         marker.scale.z = 1
         # this should be clear, 0.5 is because i think scale is on both sides of the center
         marker.pose.position.x = self.last_dist.u[0][0] / 1000
-        marker.pose.position.y = -self.last_dist.u[1][0] / 1000
+        marker.pose.position.y = self.last_dist.u[1][0] / 1000
         marker.pose.position.z = 0.5
         # convert from rpy to quaternion
-        orientation = quaternion_from_euler(0, 0, -angle)
+        orientation = quaternion_from_euler(0, 0, angle)
         marker.pose.orientation.x = orientation[0]
         marker.pose.orientation.y = orientation[1]
         marker.pose.orientation.z = orientation[2]
