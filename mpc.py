@@ -49,7 +49,7 @@ class MPC() :
     def objective_function(self, controls) :
         integral_cost = 0
         predicted_state = self.state
-        for i in range(len(controls), step=2) :
+        for i in range(0, len(controls), 2) :
             u = np.array([[controls[i]], [controls[i+1]]], dtype=np.float64)
             predicted_state = self.motion_model(u, predicted_state)
             integral_cost += self.integral_objective_function(predicted_state)
@@ -74,15 +74,16 @@ class MPC() :
         robot_orientation += yaw
         self.state = np.array([[robot_pose[0, 0]], [robot_pose[1, 0]], [robot_orientation]], dtype=np.float64)
     def compute_controls(self, timer) :
-        rospy.loginfo("calling compute_controls")
+        #rospy.loginfo("calling compute_controls")
         if self.M is not None and self.waypoint is not None :
-            rospy.loginfo("calling compute_controls and have M")
+            #rospy.loginfo("calling compute_controls and have M")
             guess = [1, 0] * self.nk
             optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
-            for i in range(len(optimized), step=2) :
+            rospy.loginfo(f"{optimized}")
+            for i in range(0, len(optimized.x), 2) :
                 twist = Twist()
-                twist.linear.x = optimized[i]
-                twist.angular.z = optimized[i+1]
+                twist.linear.x = optimized.x[i]
+                twist.angular.z = optimized.x[i+1]
                 self.controls_queue.append(twist)
     def drive(self, timer) :
         if self.M is not None and self.controls_queue :
