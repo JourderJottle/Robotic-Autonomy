@@ -266,7 +266,7 @@ class BallLocalizer :
 
         self.global_ball_data_publisher.publish(pose_with_covariance_stamped)
 
-        rospy.loginfo(f"ball pose according to ball localizer (x y) {self.last_dist.u[0, 0]} {self.last_dist.u[1, 0]}")
+        #rospy.loginfo(f"ball pose according to ball localizer (x y) {self.last_dist.u[0, 0]} {self.last_dist.u[1, 0]}")
         
 
         if self.draw_estimation or self.draw_estimation :
@@ -287,7 +287,7 @@ class BallLocalizer :
         if not self.opponent_target_grabbed :
             self.opponent_target = self.robot_pose
             self.opponent_target_grabbed = True
-        rospy.loginfo(f"robot pose according to ball localizer (x y theta) {self.robot_pose[0, 0]} {self.robot_pose[1, 0]} {self.robot_orientation}")
+        #rospy.loginfo(f"robot pose according to ball localizer (x y theta) {self.robot_pose[0, 0]} {self.robot_pose[1, 0]} {self.robot_orientation}")
 
 if __name__ == '__main__':
     try:

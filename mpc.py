@@ -73,7 +73,9 @@ class MPC() :
         robot_orientation += yaw
         self.state = np.array([[robot_pose[0, 0]], [robot_pose[1, 0]], [robot_orientation]], dtype=np.float64)
     def compute_controls(self, timer) :
+        rospy.loginfo("calling compute_controls")
         if self.M is not None :
+            rospy.loginfo("calling compute_controls and have M")
             guess = [1, 0] * self.nk
             optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
             for i in range(len(optimized), step=2) :
