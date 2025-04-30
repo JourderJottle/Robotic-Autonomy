@@ -93,6 +93,8 @@ class MPC() :
                 twist.linear.x = optimized.x[i]
                 twist.angular.z = optimized.x[i+1]
                 self.controls_queue.append(twist)
+        else :
+            self.drive_publisher.publish(Twist())
     def drive(self, timer) :
         if self.M is not None and self.controls_queue :
             self.drive_publisher.publish(self.controls_queue.popleft())
