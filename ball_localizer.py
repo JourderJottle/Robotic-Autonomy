@@ -228,7 +228,7 @@ class BallLocalizer :
 
         pose_with_covariance_stamped = PoseWithCovarianceStamped()
 
-        pose_with_covariance_stamped.header.frame_id = "map"  # or "odom", or whatever global frame you're using
+        pose_with_covariance_stamped.header.frame_id = "d400_aligned_depth_to_color_frame"  # or "odom", or whatever global frame you're using
         pose_with_covariance_stamped.header.stamp = rospy.Time.now()
 
         pose_with_covariance_stamped.pose.pose.position.x = self.last_dist.u[0][0] / 1000
