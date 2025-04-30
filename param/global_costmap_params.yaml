@@ -4,7 +4,7 @@ robot_base_frame: base_link
 update_frequency: 10.0
 publish_frequency: 10.0
 transform_tolerance: 0.5
-footprint: [[0.0, 0.24], [0.0, -0.24], [-0.52, -0.24], [-0.52, 0.24]]
+footprint: [[0.26, 0.24], [0.26, -0.24], [-0.26, -0.24], [-0.26, 0.24]]
 
 static_map: false
 plugins:

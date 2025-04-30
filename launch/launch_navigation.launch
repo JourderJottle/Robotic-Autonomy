@@ -14,7 +14,7 @@
   <node name="localizer_node" pkg="ros_opencv" type="ball_localizer.py" output="screen"/>
   
   <node pkg="tf" type="static_transform_publisher" name="t265_odom_to_odom" args="0 0 0 0 0 0  /odom /t265_odom_frame 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="robot_base_tf" args="0 0 0 0 0 0 /d400_link /base_link 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="robot_base_tf" args="-0.26 0 0 0 0 0 /d400_link /base_link 100"/>
 
 
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
