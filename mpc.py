@@ -16,9 +16,9 @@ class MPC() :
     def __init__(self) :
         rospy.init_node("mpc", anonymous=True)
         rospy.Subscriber("/waypoint", Pose, self.waypoint_callback)
-        rospy.Subscriber("/rtabmap/grid_map", OccupancyGrid, self.map_callback)
+        rospy.Subscriber("/rtabmap/proj_map", OccupancyGrid, self.map_callback)
 
-        self.waypoint = np.array([[0], [0]], dtype=np.float64)
+        self.waypoint = None
         self.state = np.array([[0], [0], [0]], dtype=np.float64)
         self.M = None
         self.map_resolution = None
@@ -74,7 +74,7 @@ class MPC() :
         self.state = np.array([[robot_pose[0, 0]], [robot_pose[1, 0]], [robot_orientation]], dtype=np.float64)
     def compute_controls(self, timer) :
         rospy.loginfo("calling compute_controls")
-        if self.M is not None :
+        if self.M is not None and self.waypoint is not None :
             rospy.loginfo("calling compute_controls and have M")
             guess = [1, 0] * self.nk
             optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
