@@ -178,10 +178,11 @@ class BallLocalizer :
                 self.target.pose.position.x = corrected_mean[0, 0] / 1000
                 self.target.pose.position.y = corrected_mean[1, 0] / 1000
                 self.target.pose.position.z = 0
-                self.target.pose.orientation.x = 1
-                self.target.pose.orientation.y = 0
-                self.target.pose.orientation.z = 0
-                self.target.pose.orientation.w = 0
+                orientation = quaternion_from_euler(0, 0, 0)
+                self.target.pose.orientation.x = orientation[0]
+                self.target.pose.orientation.y = orientation[1]
+                self.target.pose.orientation.z = orientation[2]
+                self.target.pose.orientation.w = orientation[3]
                 self.target_grabbed = True
                 self.target.header.stamp = rospy.Time.now()
                 self.target_publisher.publish(self.target)
