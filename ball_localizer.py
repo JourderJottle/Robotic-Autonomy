@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import cv2 as cv
+import tf
 from collections import deque
 
 class Gauss2D:
@@ -43,7 +44,7 @@ def gauss2D_from_polar(u_d: float, u_theta: float, S: np.array) -> Gauss2D :
     S_v = R @ S @ R.T
     return Gauss2D(np.array([[u_d * math.cos(u_theta)], [u_d * math.sin(u_theta)]], dtype=np.float64), S_v)
 
-def local_target_pose_to_global(target_pose: np.array, sensor_translation: np.array, sensor_theta: float, robot_pose: np.array, robot_theta: float) -> np.array :
+def local_target_pose_to_odom(target_pose: np.array, sensor_translation: np.array, sensor_theta: float, robot_pose: np.array, robot_theta: float) -> np.array :
     R_R = rotational_matrix_2D(sensor_theta)
     R_G = rotational_matrix_2D(robot_theta)
     return R_G @ (R_R @ target_pose + sensor_translation) + robot_pose
@@ -125,6 +126,8 @@ class BallLocalizer :
         self.draw_observation = False
         self.draw_estimation = False
 
+        self.transform_listener = tf.TransformListener()
+
         rospy.loginfo("Starting ball localizer...")
 
         rospy.spin()
@@ -136,7 +139,9 @@ class BallLocalizer :
         return x
 
     def transform_to_global(self, x) :
-        return local_target_pose_to_global(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation)
+        (trans, rot) = self.transform_listener.lookupTransform("/map", "/odom", self.last_time)
+        R_M = rotational_matrix_2D(rot)
+        return R_M @ local_target_pose_to_odom(x, self.sensor_translation, self.sensor_theta, self.robot_pose, self.robot_orientation) + np.vstack(trans)
 
     # TODO: sensor noise for angle
     def sensor_noise(self, d) :
@@ -228,7 +233,7 @@ class BallLocalizer :
 
         pose_with_covariance_stamped = PoseWithCovarianceStamped()
 
-        pose_with_covariance_stamped.header.frame_id = "odom"  # or "odom", or whatever global frame you're using
+        pose_with_covariance_stamped.header.frame_id = "map"  # or "odom", or whatever global frame you're using
         pose_with_covariance_stamped.header.stamp = rospy.Time.now()
 
         pose_with_covariance_stamped.pose.pose.position.x = self.last_dist.u[0][0] / 1000
