@@ -52,24 +52,25 @@ class MPC() :
         rospy.spin()
 
     def sum_within_footprint(self, x) :
-        mx = math.floor(x[1, 0] / self.map_resolution) - self.footprint
-        my = math.floor(x[0, 0] / self.map_resolution) - self.footprint
+        #min values
+        mx = math.floor(x[1, 0]- self.footprint / self.map_resolution)
+        my = math.floor(x[0, 0]- self.footprint / self.map_resolution) 
         total = 0
-        for xp, yp in np.ndindex(math.min(math.max(0, mx + self.footprint * 2), self.map_width), math.min(math.max(0, my + self.footprint * 2), self.map_height)) :
+        for xp, yp in np.ndindex(min(max(0, mx + self.footprint * 2), self.map_width), min(max(0, my + self.footprint * 2), self.map_height)) :
             total += self.M.data[yp * self.map_width + xp]
             if total >= 100 :
                 return 100
         return total
     def occupancy_probability(self, x) :
-        distance_from_ball = math.max(1, math.sqrt((self.ball_pose_with_cov.pose.position.x - x[0, 0])**2 + (self.ball_pose_with_cov.pose.position.y - x[1, 0])**2))
-        return math.min(self.sum_within_footprint(x) + 100 / distance_from_ball, 100)
+        distance_from_ball = max(1, math.sqrt((self.ball_pose_with_cov.pose.position.x - x[0, 0])**2 + (self.ball_pose_with_cov.pose.position.y - x[1, 0])**2))
+        return min(self.sum_within_footprint(x) + 100 / distance_from_ball, 100)
     def motion_model(self, u, x, step) :
         __dt = self.dt*step
         return np.array([[x[0, 0] + u[0, 0] * math.cos(x[2, 0]) * __dt], [x[1, 0] + u[0, 0] * math.sin(x[2, 0]) * __dt], [x[2, 0] + u[1, 0] * __dt]], dtype=np.float64)
     def integral_objective_function(self, x, ball_position) :
         #TODO add checking squares around it too
         ball_position_float = [ball_position.x, ball_position.y]
-        ball_distance = np.linalg.norm(x-ball_position_float)
+        ball_distance = np.linalg.norm([x[0], x[1]]-ball_position_float)
         if ball_distance < 3.5:
             cost = 100
         elif ball_distance < 5:
@@ -122,7 +123,7 @@ class MPC() :
             #make sure it hasn't reached the goal
             if math.sqrt((self.waypoint[0, 0] - self.state[0, 0])**2 + (self.waypoint[1, 0] - self.state[1, 0])**2) > self.tolerance :
                 #guess for 
-                guess = [1, 0] * self.nk
+                guess = [1, 0]
                 optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_wli, self.max_wli), (-self.max_wri, self.max_wri)])
                 
                 __left = optimized.x[0]
@@ -136,14 +137,14 @@ class MPC() :
             else :
                 self.drive_publisher.publish(Twist())
     def robot_speed_from_wheel_speeds(self, u) :
-        wl = u[0, 0]
-        wr = u[1, 0]
+        wl = u[0]
+        wr = u[1]
         linear_velocity = self.gear_ratio * (wl + wr) / 2
         angular_velocity = self.gear_ratio * (wr - wl) / self.track_width
         return [linear_velocity, angular_velocity]
 
     def drive(self, timer) :
-        if self.M is not None and self.controls_queue :
+        if self.M is not None and self.current_control :
             self.drive_publisher.publish(self.current_control)
         
 
