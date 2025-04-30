@@ -141,6 +141,7 @@ class BallLocalizer :
 
     def start_callback(self, start) :
         self.start = True
+        rospy.loginfo("Starting Demo")
 
     def motion_model(self, u) :
         return u
