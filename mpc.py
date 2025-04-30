@@ -2,8 +2,10 @@ import rospy
 import numpy as np
 import math
 import scipy
+import tf
 from collections import deque
 from nav_msgs.msg import OccupancyGrid
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovariance
 from geometry_msgs.msg import Twist
@@ -16,8 +18,9 @@ class MPC() :
     def __init__(self) :
         rospy.init_node("mpc", anonymous=True)
         rospy.Subscriber("/waypoint", Pose, self.waypoint_callback)
-        rospy.Subscriber("/rtabmap/proj_map", OccupancyGrid, self.map_callback)
-
+        rospy.Subscriber("/map", OccupancyGrid, self.map_callback)
+        rospy.Subscriber("/rtabmap/odom", Odometry, self.odom_callback)
+        self.transform_listener = tf.TransformListener()
         self.waypoint = None
         self.state = np.array([[0], [0], [0]], dtype=np.float64)
         self.M = None
@@ -25,7 +28,7 @@ class MPC() :
         self.map_height = None
         self.map_width = None
         self.max_linear_speed = 0.2
-        self.max_angular_speed = 0.5
+        self.max_angular_speed = 0.2
         self.dt = 0.2
         self.nk = 10
         self.last_time = rospy.get_rostime().secs
@@ -52,7 +55,7 @@ class MPC() :
         for i in range(0, len(controls), 2) :
             u = np.array([[controls[i]], [controls[i+1]]], dtype=np.float64)
             predicted_state = self.motion_model(u, predicted_state)
-            integral_cost += self.integral_objective_function(predicted_state)
+            integral_cost += self.integral_objective_function(predicted_state) * self.dt
         return integral_cost + self.terminal_objective_function(predicted_state)
     def waypoint_callback(self, x) :
         self.waypoint = np.array([[x.position.x], [x.position.y]], dtype=np.float64)
@@ -74,12 +77,10 @@ class MPC() :
         robot_orientation += yaw
         self.state = np.array([[robot_pose[0, 0]], [robot_pose[1, 0]], [robot_orientation]], dtype=np.float64)
     def compute_controls(self, timer) :
-        #rospy.loginfo("calling compute_controls")
+        rospy.loginfo(f"{self.waypoint} {self.state}")
         if self.M is not None and self.waypoint is not None :
-            #rospy.loginfo("calling compute_controls and have M")
             guess = [1, 0] * self.nk
             optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
-            rospy.loginfo(f"{optimized}")
             for i in range(0, len(optimized.x), 2) :
                 twist = Twist()
                 twist.linear.x = optimized.x[i]

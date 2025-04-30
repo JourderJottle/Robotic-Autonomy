@@ -203,7 +203,7 @@ class BallLocalizer :
             cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (255, 255, 255), -1)
         
         marker = Marker()
-        marker.header.frame_id = "d400_aligned_depth_to_color_frame"
+        marker.header.frame_id = "map"
         marker.header.stamp = rospy.Time.now()
         # type for cylinder since we don't have z variance
         marker.type = 3
