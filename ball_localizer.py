@@ -9,6 +9,7 @@ from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovariance
+from std_msgs.msg import Float32
 import tf2_ros
 import tf2_geometry_msgs
 import numpy as np
@@ -89,6 +90,7 @@ class BallLocalizer :
         rospy.init_node("ball_localizer", anonymous=True)
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
         rospy.Subscriber("/rtabmap/odom", Odometry, self.odom_callback)
+        rospy.Subscriber("/start", Float32, self.start_callback)
         self.marker_publisher = rospy.Publisher("/ball_variance_ellipse", Marker, queue_size=10)
         self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovariance, queue_size=10)
         self.target_publisher = rospy.Publisher("/waypoint", Pose, queue_size=1)
@@ -131,10 +133,15 @@ class BallLocalizer :
 
         self.draw_observation = False
         self.draw_estimation = False
+        self.start = False
 
         rospy.loginfo("Starting ball localizer...")
 
         rospy.spin()
+
+    def start_callback(self, start) :
+        self.start = True
+        rospy.loginfo("Starting Demo")
 
     def motion_model(self, u) :
         return u
@@ -172,7 +179,7 @@ class BallLocalizer :
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.transform_to_global(dist.u), self.sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
-            if not self.target_grabbed :
+            if not self.target_grabbed and self.start :
                 self.target = Pose()
                 self.target.position.x = corrected_mean[0, 0] / 1000
                 self.target.position.y = corrected_mean[1, 0] / 1000
@@ -284,7 +291,7 @@ class BallLocalizer :
         R_M = rotational_matrix_2D(yaw)
         self.robot_pose = R_M @ self.robot_pose + np.vstack(trans[0:2]) * 1000
         self.robot_orientation += yaw
-        if not self.opponent_target_grabbed :
+        if not self.opponent_target_grabbed and self.start :
             self.opponent_target = self.robot_pose
             self.opponent_target_grabbed = True
         #rospy.loginfo(f"robot pose according to ball localizer (x y theta) {self.robot_pose[0, 0]} {self.robot_pose[1, 0]} {self.robot_orientation}")

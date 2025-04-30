@@ -9,6 +9,7 @@
     <arg name="depth_topic" default="/d400/aligned_depth_to_color/image_raw"/>
     <arg name="camera_info_topic" default="/d400/color/camera_info"/>
     <arg name="frame_id" default="d400_link"/>
+    <arg name="rtabmap_args" value="--delete_db_on_start"/>
   </include>
   
   <node name="camera_node" pkg="ros_opencv" type="camera_subscriber.py" output="screen"/>
