@@ -174,14 +174,14 @@ class BallLocalizer :
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
             if not self.target_grabbed :
                 self.target = Pose()
-                self.target.pose.position.x = corrected_mean[0, 0] / 1000
-                self.target.pose.position.y = corrected_mean[1, 0] / 1000
-                self.target.pose.position.z = 0
+                self.target.position.x = corrected_mean[0, 0] / 1000
+                self.target.position.y = corrected_mean[1, 0] / 1000
+                self.target.position.z = 0
                 orientation = quaternion_from_euler(0, 0, 0)
-                self.target.pose.orientation.x = orientation[0]
-                self.target.pose.orientation.y = orientation[1]
-                self.target.pose.orientation.z = orientation[2]
-                self.target.pose.orientation.w = orientation[3]
+                self.target.orientation.x = orientation[0]
+                self.target.orientation.y = orientation[1]
+                self.target.orientation.z = orientation[2]
+                self.target.orientation.w = orientation[3]
                 self.target_grabbed = True
         else :
 
@@ -251,11 +251,11 @@ class BallLocalizer :
 
         pose_with_covariance_stamped = PoseWithCovariance()
 
-        pose_with_covariance_stamped.pose.pose.position.x = self.last_dist.u[0][0] / 1000
-        pose_with_covariance_stamped.pose.pose.position.y = self.last_dist.u[1][0] / 1000
-        pose_with_covariance_stamped.pose.pose.position.z = 0
+        pose_with_covariance_stamped.pose.position.x = self.last_dist.u[0][0] / 1000
+        pose_with_covariance_stamped.pose.position.y = self.last_dist.u[1][0] / 1000
+        pose_with_covariance_stamped.pose.position.z = 0
 
-        pose_with_covariance_stamped.pose.covariance = np.array([
+        pose_with_covariance_stamped.covariance = np.array([
             [self.last_dist.S[0, 0] / 1000, self.last_dist.S[0, 1] / 1000, 0, 0, 0, 0], 
             [self.last_dist.S[1, 0] / 1000, self.last_dist.S[1, 1] / 1000, 0, 0, 0, 0], 
             [0, 0, 0, 0, 0, 0], 
