@@ -184,11 +184,13 @@ class BallLocalizer :
                 self.target.pose.orientation.z = orientation[2]
                 self.target.pose.orientation.w = orientation[3]
                 self.target_grabbed = True
-                self.target.header.stamp = rospy.Time.now()
-                self.target_publisher.publish(self.target)
         else :
 
             self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
+
+        if self.target_grabbed :
+            self.target.header.stamp = rospy.Time.now()
+            self.target_publisher.publish(self.target)
 
         dx = self.opponent_target[0, 0] - self.last_dist.u[0, 0]
         dy = self.opponent_target[1, 0] - self.last_dist.u[1, 0]
