@@ -4,6 +4,7 @@
   <remap from="grid_map" to="/map"/>
   <include file="$(find realsense2_camera)/launch/rs_d400_and_t265.launch"/>
   <include file="$(find rtabmap_launch)/launch/rtabmap.launch">
+    <arg name="rtabmap_args" default="--delete_db_on_start"/>
     <arg name="rgb_topic" default="/d400/color/image_raw"/>
     <arg name="depth_topic" default="/d400/aligned_depth_to_color/image_raw"/>
     <arg name="camera_info_topic" default="/d400/color/camera_info"/>

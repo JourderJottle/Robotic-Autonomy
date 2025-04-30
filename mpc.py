@@ -20,8 +20,10 @@ class MPC() :
         rospy.Subscriber("/waypoint", Pose, self.waypoint_callback)
         rospy.Subscriber("/map", OccupancyGrid, self.map_callback)
         rospy.Subscriber("/rtabmap/odom", Odometry, self.odom_callback)
+        rospy.Subscriber("/global_ball_data", PoseWithCovariance, self.ball_callback)
         self.transform_listener = tf.TransformListener()
         self.waypoint = None
+        self.ball_pos = None
         self.state = np.array([[0], [0], [0]], dtype=np.float64)
         self.M = None
         self.map_resolution = None
@@ -33,6 +35,7 @@ class MPC() :
         self.nk = 10
         self.last_time = rospy.get_rostime().secs
         self.controls_queue = deque()
+        self.tolerance = 1
 
         self.drive_publisher = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
@@ -45,8 +48,16 @@ class MPC() :
         return self.M.data[math.floor(x[1, 0] / self.map_resolution) * self.map_width + math.floor(x[0, 0] / self.map_resolution)]
     def motion_model(self, u, x) :
         return np.array([[x[0, 0] + u[0, 0] * math.cos(x[2, 0]) * self.dt], [x[1, 0] + u[0, 0] * math.sin(x[2, 0]) * self.dt], [x[2, 0] + u[1, 0] * self.dt]], dtype=np.float64)
-    def integral_objective_function(self, x) :
-        return 1 + self.occupancy_probability(x)
+    def integral_objective_function(self, x, ball_position) :
+        ball_position_float = [ball_position.x, ball_position.y, ball_position.z]
+        ball_distance = np.linalg.norm(x-ball_position_float)
+        if ball_distance < 3.5:
+            cost = 100
+        elif ball_distance < 5:
+            cost = (5-ball_distance)*100/1.5
+        else:
+            cost = 0
+        return 1 + self.occupancy_probability(x) + cost
     def terminal_objective_function(self, x) :
         return math.sqrt((x[0, 0] - self.waypoint[0, 0])**2 + (x[1, 0] - self.waypoint[1, 0])**2) + self.occupancy_probability(x)
     def objective_function(self, controls) :
@@ -55,7 +66,7 @@ class MPC() :
         for i in range(0, len(controls), 2) :
             u = np.array([[controls[i]], [controls[i+1]]], dtype=np.float64)
             predicted_state = self.motion_model(u, predicted_state)
-            integral_cost += self.integral_objective_function(predicted_state) * self.dt
+            integral_cost += self.integral_objective_function(predicted_state, self.ball_pos) * self.dt
         return integral_cost + self.terminal_objective_function(predicted_state)
     def waypoint_callback(self, x) :
         self.waypoint = np.array([[x.position.x], [x.position.y]], dtype=np.float64)
@@ -79,16 +90,21 @@ class MPC() :
     def compute_controls(self, timer) :
         rospy.loginfo(f"{self.waypoint} {self.state}")
         if self.M is not None and self.waypoint is not None :
-            guess = [1, 0] * self.nk
-            optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
-            for i in range(0, len(optimized.x), 2) :
-                twist = Twist()
-                twist.linear.x = optimized.x[i]
-                twist.angular.z = optimized.x[i+1]
-                self.controls_queue.append(twist)
+            if math.sqrt((self.waypoint[0, 0] - self.state[0, 0])**2 + (self.waypoint[1, 0] - self.state[1, 0])**2) > self.tolerance :
+                guess = [1, 0] * self.nk
+                optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
+                for i in range(0, len(optimized.x), 2) :
+                    twist = Twist()
+                    twist.linear.x = optimized.x[i]
+                    twist.angular.z = optimized.x[i+1]
+                    self.controls_queue.append(twist)
+            else :
+                self.drive_publisher.publish(Twist())
     def drive(self, timer) :
         if self.M is not None and self.controls_queue :
             self.drive_publisher.publish(self.controls_queue.popleft())
+    def ball_callback(self, ball_pose):
+        self.ball_pos = ball_pose.pose.position
 
 if __name__ == '__main__':
     try:
