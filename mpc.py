@@ -37,10 +37,16 @@ class MPC() :
         self.last_time = rospy.get_rostime().secs
         self.controls_queue = deque()
         self.tolerance = 1
+        self.pi = 3.1415926
+        self.max_wli = 122/60/(2*self.pi)/2
+        self.max_wri = 122/60/(2*self.pi)/2
+        self.gear_ratio = 1
+        self.track_width = 0.4445
 
         self.drive_publisher = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
-        self.computation_timer = rospy.Timer(rospy.Duration(self.nk * self.dt), self.compute_controls)
+        #recompute more quickly to account for errors
+        self.computation_timer = rospy.Timer(rospy.Duration(self.nk/2 * self.dt), self.compute_controls)
         self.drive_timer = rospy.Timer(rospy.Duration(self.dt), self.drive)
 
         rospy.spin()
@@ -62,7 +68,7 @@ class MPC() :
         return np.array([[x[0, 0] + u[0, 0] * math.cos(x[2, 0]) * __dt], [x[1, 0] + u[0, 0] * math.sin(x[2, 0]) * __dt], [x[2, 0] + u[1, 0] * __dt]], dtype=np.float64)
     def integral_objective_function(self, x, ball_position) :
         #TODO add checking squares around it too
-        ball_position_float = [ball_position.x, ball_position.y, ball_position.z]
+        ball_position_float = [ball_position.x, ball_position.y]
         ball_distance = np.linalg.norm(x-ball_position_float)
         if ball_distance < 3.5:
             cost = 100
@@ -77,13 +83,13 @@ class MPC() :
         integral_cost = 0
         predicted_state = self.state
         #convert to Twist format
-        speed_cmd = robot_speed_from_wheel_speeds(controls)
+        speed_cmd = self.robot_speed_from_wheel_speeds(controls)
         __linear_velocity = speed_cmd[0]
         __angular_velocity = speed_cmd[1]
         u = np.array([[__linear_velocity], [__angular_velocity]], dtype=np.float64)
-        for i in range(0, nk):
+        for i in range(0, self.nk):
             
-            predicted_state = self.motion_model(u, predicted_state, step)
+            predicted_state = self.motion_model(u, predicted_state, i)
             integral_cost += self.integral_objective_function(predicted_state, self.ball_pos) * self.dt
 
         return integral_cost + self.terminal_objective_function(predicted_state)
@@ -108,6 +114,7 @@ class MPC() :
         self.state = np.array([[robot_pose[0, 0]], [robot_pose[1, 0]], [robot_orientation]], dtype=np.float64)
     def ball_callback(self, pose) :
         self.ball_pose_with_cov = pose
+        self.ball_pos = pose.pose.position
     def compute_controls(self, timer) :
         rospy.loginfo(f"{self.waypoint} {self.state}")
         # make sure map and start point exist
@@ -120,10 +127,12 @@ class MPC() :
                 
                 __left = optimized.x[0]
                 __right = optimized.x[1]
+                __optimal_control = self.robot_speed_from_wheel_speeds([__left, __right])
                 twist = Twist()
-                twist.linear.x = optimized.x[i]
-                twist.angular.z = optimized.x[i+1]
+                twist.linear.x = __optimal_control[0]
+                twist.angular.z = __optimal_control[1]
                 self.controls_queue.append(twist)
+                self.current_control = twist
             else :
                 self.drive_publisher.publish(Twist())
     def robot_speed_from_wheel_speeds(self, u) :
@@ -135,9 +144,8 @@ class MPC() :
 
     def drive(self, timer) :
         if self.M is not None and self.controls_queue :
-            self.drive_publisher.publish(self.controls_queue.popleft())
-    def ball_callback(self, ball_pose):
-        self.ball_pos = ball_pose.pose.position
+            self.drive_publisher.publish(self.current_control)
+        
 
 if __name__ == '__main__':
     try:
