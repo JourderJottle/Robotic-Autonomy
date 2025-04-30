@@ -31,9 +31,10 @@ class MPC() :
         self.map_width = None
         self.max_linear_speed = 0.2
         self.max_angular_speed = 0.2
+        self.footprint = 0.25
         self.dt = 0.2
         self.nk = 10
-        self.last_time = rospy.get_rostime().secsguobjective_functioness
+        self.last_time = rospy.get_rostime().secs
         self.controls_queue = deque()
         self.tolerance = 1
 
@@ -49,16 +50,18 @@ class MPC() :
         my = math.floor(x[0, 0] / self.map_resolution) - self.footprint
         total = 0
         for xp, yp in np.ndindex(math.min(math.max(0, mx + self.footprint * 2), self.map_width), math.min(math.max(0, my + self.footprint * 2), self.map_height)) :
-            total += self.M.data(yp * self.map_width + xp)
+            total += self.M.data[yp * self.map_width + xp]
             if total >= 100 :
                 return 100
         return total
     def occupancy_probability(self, x) :
-        distance_from_ball = math.max(1, math.sqrt((self.ball_pose_with_cov.pose.position.x - self.ball_pose_with_cov.covariance[0] - x[0, 0])**2 + (self.ball_pose_with_cov.pose.position.y - self.ball_pose_with_cov.covariance[7] - x[1, 0])**2))
+        distance_from_ball = math.max(1, math.sqrt((self.ball_pose_with_cov.pose.position.x - x[0, 0])**2 + (self.ball_pose_with_cov.pose.position.y - x[1, 0])**2))
         return math.min(self.sum_within_footprint(x) + 100 / distance_from_ball, 100)
-    def motion_model(self, u, x) :
-        return np.array([[x[0, 0] + u[0, 0] * math.cos(x[2, 0]) * self.dt], [x[1, 0] + u[0, 0] * math.sin(x[2, 0]) * self.dt], [x[2, 0] + u[1, 0] * self.dt]], dtype=np.float64)
+    def motion_model(self, u, x, step) :
+        __dt = self.dt*step
+        return np.array([[x[0, 0] + u[0, 0] * math.cos(x[2, 0]) * __dt], [x[1, 0] + u[0, 0] * math.sin(x[2, 0]) * __dt], [x[2, 0] + u[1, 0] * __dt]], dtype=np.float64)
     def integral_objective_function(self, x, ball_position) :
+        #TODO add checking squares around it too
         ball_position_float = [ball_position.x, ball_position.y, ball_position.z]
         ball_distance = np.linalg.norm(x-ball_position_float)
         if ball_distance < 3.5:
@@ -73,10 +76,16 @@ class MPC() :
     def objective_function(self, controls) :
         integral_cost = 0
         predicted_state = self.state
-        for i in range(0, len(controls), 2) :
-            u = np.array([[controls[i]], [controls[i+1]]], dtype=np.float64)
-            predicted_state = self.motion_model(u, predicted_state)
+        #convert to Twist format
+        speed_cmd = robot_speed_from_wheel_speeds(controls)
+        __linear_velocity = speed_cmd[0]
+        __angular_velocity = speed_cmd[1]
+        u = np.array([[__linear_velocity], [__angular_velocity]], dtype=np.float64)
+        for i in range(0, nk):
+            
+            predicted_state = self.motion_model(u, predicted_state, step)
             integral_cost += self.integral_objective_function(predicted_state, self.ball_pos) * self.dt
+
         return integral_cost + self.terminal_objective_function(predicted_state)
     def waypoint_callback(self, x) :
         self.waypoint = np.array([[x.position.x], [x.position.y]], dtype=np.float64)
@@ -101,17 +110,29 @@ class MPC() :
         self.ball_pose_with_cov = pose
     def compute_controls(self, timer) :
         rospy.loginfo(f"{self.waypoint} {self.state}")
+        # make sure map and start point exist
         if self.M is not None and self.waypoint is not None :
+            #make sure it hasn't reached the goal
             if math.sqrt((self.waypoint[0, 0] - self.state[0, 0])**2 + (self.waypoint[1, 0] - self.state[1, 0])**2) > self.tolerance :
+                #guess for 
                 guess = [1, 0] * self.nk
-                optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_linear_speed, self.max_linear_speed), (-self.max_angular_speed, self.max_angular_speed)] * self.nk)
-                for i in range(0, len(optimized.x), 2) :
-                    twist = Twist()
-                    twist.linear.x = optimized.x[i]
-                    twist.angular.z = optimized.x[i+1]
-                    self.controls_queue.append(twist)
+                optimized = scipy.optimize.minimize(self.objective_function, guess, bounds=[(-self.max_wli, self.max_wli), (-self.max_wri, self.max_wri)])
+                
+                __left = optimized.x[0]
+                __right = optimized.x[1]
+                twist = Twist()
+                twist.linear.x = optimized.x[i]
+                twist.angular.z = optimized.x[i+1]
+                self.controls_queue.append(twist)
             else :
                 self.drive_publisher.publish(Twist())
+    def robot_speed_from_wheel_speeds(self, u) :
+        wl = u[0, 0]
+        wr = u[1, 0]
+        linear_velocity = self.gear_ratio * (wl + wr) / 2
+        angular_velocity = self.gear_ratio * (wr - wl) / self.track_width
+        return [linear_velocity, angular_velocity]
+
     def drive(self, timer) :
         if self.M is not None and self.controls_queue :
             self.drive_publisher.publish(self.controls_queue.popleft())
