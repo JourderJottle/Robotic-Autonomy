@@ -12,21 +12,22 @@
   
   <node name="camera_node" pkg="ros_opencv" type="camera_subscriber.py" output="screen"/>
   <node name="localizer_node" pkg="ros_opencv" type="ball_localizer.py" output="screen"/>
+  <node name="navigation_node" pkg="ros_opencv" type="mpc.py" output="screen"/>
   
   <node pkg="tf" type="static_transform_publisher" name="t265_odom_to_odom" args="0 0 0 0 0 0  /odom /t265_odom_frame 100"/>
   <node pkg="tf" type="static_transform_publisher" name="robot_base_tf" args="-0.26 0 0 0 0 0 /d400_link /base_link 100"/>
 
-
+  <!--
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
     <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
     <rosparam file="$(find ros_opencv)/src/param/costmap_common_params.yaml" command="load"/>
-    <!--<rosparam file="$(find ros_opencv)/src/param/local_costmap_params.yaml" command="load" />
-    <rosparam file="$(find ros_opencv)/src/param/global_costmap_params.yaml" command="load" /> -->
+    <rosparam file="$(find ros_opencv)/src/param/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find ros_opencv)/src/param/global_costmap_params.yaml" command="load" />
     <rosparam command="load" file="$(find ros_opencv)/src/param/local_costmap_params.yaml" param="local_costmap"/>
     <rosparam command="load" file="$(find ros_opencv)/src/param/global_costmap_params.yaml" param="global_costmap"/>
     <rosparam file="$(find ros_opencv)/src/param/move_base_params.yaml" command="load" />
     <rosparam file="$(find ros_opencv)/src/param/dwa_local_planner_params.yaml" command="load" />
     <remap from="cmd_vel" to="/cmd_vel"/>
   </node>
-
+  -->
 </launch>

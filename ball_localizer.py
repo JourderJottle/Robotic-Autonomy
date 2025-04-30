@@ -4,11 +4,11 @@
 import rospy
 from std_msgs.msg import Float32MultiArray
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Pose
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovariance
 import tf2_ros
 import tf2_geometry_msgs
 import numpy as np
@@ -90,8 +90,8 @@ class BallLocalizer :
         rospy.Subscriber("/ball_data", Float32MultiArray, self.callback)
         rospy.Subscriber("/rtabmap/odom", Odometry, self.odom_callback)
         self.marker_publisher = rospy.Publisher("/ball_variance_ellipse", Marker, queue_size=10)
-        self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovarianceStamped, queue_size=10)
-        self.target_publisher = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+        self.global_ball_data_publisher = rospy.Publisher("/global_ball_data", PoseWithCovariance, queue_size=10)
+        self.target_publisher = rospy.Publisher("/waypoint", Pose, queue_size=1)
         self.transform_listener = tf.TransformListener()
         
         # checked via tape measurer
@@ -173,8 +173,7 @@ class BallLocalizer :
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.transform_to_global(dist.u), self.sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
             if not self.target_grabbed :
-                self.target = PoseStamped()
-                self.target.header.frame_id = "map"
+                self.target = Pose()
                 self.target.pose.position.x = corrected_mean[0, 0] / 1000
                 self.target.pose.position.y = corrected_mean[1, 0] / 1000
                 self.target.pose.position.z = 0
@@ -189,7 +188,6 @@ class BallLocalizer :
             self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
 
         if self.target_grabbed :
-            self.target.header.stamp = rospy.Time.now()
             self.target_publisher.publish(self.target)
 
         dx = self.opponent_target[0, 0] - self.last_dist.u[0, 0]
@@ -251,10 +249,7 @@ class BallLocalizer :
         # self.global_ball_data_publisher.publish(pose_with_covariance)
         
 
-        pose_with_covariance_stamped = PoseWithCovarianceStamped()
-
-        pose_with_covariance_stamped.header.frame_id = "map"  # or "odom", or whatever global frame you're using
-        pose_with_covariance_stamped.header.stamp = rospy.Time.now()
+        pose_with_covariance_stamped = PoseWithCovariance()
 
         pose_with_covariance_stamped.pose.pose.position.x = self.last_dist.u[0][0] / 1000
         pose_with_covariance_stamped.pose.pose.position.y = self.last_dist.u[1][0] / 1000
@@ -288,7 +283,7 @@ class BallLocalizer :
         (roll, pitch, yaw) = euler_from_quaternion(rot)
         R_M = rotational_matrix_2D(yaw)
         self.robot_pose = R_M @ self.robot_pose + np.vstack(trans[0:2]) * 1000
-        self.robot_orientation + yaw
+        self.robot_orientation += yaw
         if not self.opponent_target_grabbed :
             self.opponent_target = self.robot_pose
             self.opponent_target_grabbed = True
