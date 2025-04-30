@@ -259,7 +259,7 @@ class BallLocalizer :
         (roll, pitch, yaw) = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
         self.robot_pose = np.array([[odom.pose.pose.position.x * 1000], [odom.pose.pose.position.y * 1000]], dtype=np.float64)
         self.robot_orientation = yaw
-        rospy.loginfo(f"robot pose according to ball localizer {self.robot_pose}")
+        rospy.loginfo(f"robot pose according to ball localizer {self.robot_pose} {self.robot_orientation}")
 
 if __name__ == '__main__':
     try:
