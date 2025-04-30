@@ -45,9 +45,9 @@ class MPC() :
         rospy.spin()
 
     def occupancy_probability(self, x) :
-        #distance_from_ball = math.sqrt((self.ball_pose_with_cov.pose.position.x - self.ball_pose_with_cov.covariance[0] - x[0, 0])**2 + (self.ball_pose_with_cov.pose.position.y - self.ball_pose_with_cov.covariance[7] - x[1, 0])**2)
-        #danger_from_ball = 100 if distance_from_ball < 1 else (60 if distance_from_ball < 2 else (30 if distance_from_ball < 3 else 0))
-        return self.M.data[math.floor(x[1, 0] / self.map_resolution) * self.map_width + math.floor(x[0, 0] / self.map_resolution)] #+ danger_from_ball
+        distance_from_ball = math.sqrt((self.ball_pose_with_cov.pose.position.x - self.ball_pose_with_cov.covariance[0] - x[0, 0])**2 + (self.ball_pose_with_cov.pose.position.y - self.ball_pose_with_cov.covariance[7] - x[1, 0])**2)
+        danger_from_ball = 100 if distance_from_ball < 1 else (60 if distance_from_ball < 2 else (30 if distance_from_ball < 3 else 0))
+        return self.M.data[math.floor(x[1, 0] / self.map_resolution) * self.map_width + math.floor(x[0, 0] / self.map_resolution)] + danger_from_ball
     def motion_model(self, u, x) :
         return np.array([[x[0, 0] + u[0, 0] * math.cos(x[2, 0]) * self.dt], [x[1, 0] + u[0, 0] * math.sin(x[2, 0]) * self.dt], [x[2, 0] + u[1, 0] * self.dt]], dtype=np.float64)
     def integral_objective_function(self, x) :
