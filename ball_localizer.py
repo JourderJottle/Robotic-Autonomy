@@ -172,20 +172,25 @@ class BallLocalizer :
                 cv.ellipse(display_frame, (int(u[1][0] * self.scale + self.frame_width / 2), self.frame_height - int(u[0][0] * self.scale)), (int(l2 * self.scale), int(l1 * self.scale)), math.degrees(angle), 0, 360, (0, 0, 255), -1)
             (corrected_mean, corrected_covariance) = ekf_correct(predicted_mean, predicted_covariance, self.transform_to_global(dist.u), self.sensor_model, dist.S)
             self.last_dist = Gauss2D(corrected_mean, corrected_covariance)
-            if not self.target_grabbed :
-                target = PoseStamped()
-                target.header.stamp = rospy.Time.now()
-                target.header.frame_id = "map"
-                target.pose.position.x = corrected_mean[0, 0]
-                target.pose.position.y = corrected_mean[1, 0]
-                self.target_publisher.publish(target)
+            if not self.target_grabbed and self.opponent_target_grabbed :
+                self.target = PoseStamped()
+                self.target.header.frame_id = "map"
+                self.target.pose.position.x = corrected_mean[0, 0] / 1000
+                self.target.pose.position.y = corrected_mean[1, 0] / 1000
+                self.target.pose.position.z = 0
+                self.target.pose.orientation.x = 0
+                self.target.pose.orientation.y = 0
+                self.target.pose.orientation.z = 0
+                self.target.pose.orientation.w = 1
                 self.target_grabbed = True
+                self.target.header.stamp = rospy.Time.now()
+                self.target_publisher.publish(self.target)
         else :
 
             self.last_dist = Gauss2D(predicted_mean, predicted_covariance)
 
-        dx = self.last_dist.u[0, 0] - self.opponent_target[0, 0]
-        dy = self.last_dist.u[1, 0] - self.opponent_target[1, 0]
+        dx = self.opponent_target[0, 0] - self.last_dist.u[0, 0]
+        dy = self.opponent_target[1, 0] - self.last_dist.u[1, 0]
         dv = math.sqrt(dx**2 + dy**2)
         self.motion_control = np.array([[dx / dv * self.opponent_speed], [dy / dv * self.opponent_speed]], dtype=np.float64)
         
