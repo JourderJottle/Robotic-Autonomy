@@ -61,6 +61,7 @@ class MPC() :
         self.map_resolution = M.info.resolution
         self.map_height = M.info.height
         self.map_width = M.info.width
+        rospy.loginfo("map callback")
     def odom_callback(self, odom) :
         orientation = odom.pose.pose.orientation
         (roll, pitch, yaw) = euler_from_quaternion([orientation.x, orientation.y, orientation.z, orientation.w])
